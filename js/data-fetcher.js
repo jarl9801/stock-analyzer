@@ -1,418 +1,414 @@
 // ============================================
-// DATA-FETCHER.JS - Obtención de datos financieros
+// DATA-FETCHER.JS - API de datos financieros en tiempo real
 // ============================================
 
-// APIs disponibles (requieren API keys en producción)
-const API_CONFIG = {
-    alphaVantage: {
-        baseUrl: 'https://www.alphavantage.co/query',
-        apiKey: null // El usuario debe configurar su propia API key
+// APIs gratuitas para datos de mercado
+const API_ENDPOINTS = {
+    // Yahoo Finance proxy (gratuito, no requiere API key)
+    yahoo: {
+        quote: 'https://query1.finance.yahoo.com/v8/finance/chart/',
+        search: 'https://query1.finance.yahoo.com/v1/finance/search'
     },
-    polygon: {
-        baseUrl: 'https://api.polygon.io/v2',
-        apiKey: null
-    },
-    finnhub: {
-        baseUrl: 'https://finnhub.io/api/v1',
+    // Alternative: Twelve Data (requiere API key para uso extendido)
+    twelvedata: {
+        base: 'https://api.twelvedata.com',
         apiKey: null
     }
 };
 
-// ============================================
-// Datos de ejemplo para demostración
-// ============================================
-const MOCK_DATA = {
-    'AAPL': {
-        name: 'Apple Inc.',
-        sector: 'Tecnología',
-        price: 175.50,
-        change: 2.30,
-        marketCap: 2800000000000,
-        pe: 28.5,
-        pb: 45.2,
-        eps: 6.15,
-        bookValue: 3.88,
-        dividend: 0.96,
-        beta: 1.2,
-        fcf: 99000000000, // Free Cash Flow anual
-        shares: 15400000000,
-        revenue: 394000000000,
-        debt: 120000000000,
-        cash: 169000000000
-    },
-    'MSFT': {
-        name: 'Microsoft Corporation',
-        sector: 'Tecnología',
-        price: 330.20,
-        change: -1.50,
-        marketCap: 2500000000000,
-        pe: 32.1,
-        pb: 12.8,
-        eps: 10.29,
-        bookValue: 25.80,
-        dividend: 2.72,
-        beta: 0.9,
-        fcf: 65000000000,
-        shares: 7400000000,
-        revenue: 211000000000,
-        debt: 48000000000,
-        cash: 104000000000
-    },
-    'GOOGL': {
-        name: 'Alphabet Inc.',
-        sector: 'Tecnología',
-        price: 140.80,
-        change: 0.85,
-        marketCap: 1800000000000,
-        pe: 24.8,
-        pb: 6.2,
-        eps: 5.68,
-        bookValue: 22.70,
-        dividend: 0,
-        beta: 1.05,
-        fcf: 60000000000,
-        shares: 12700000000,
-        revenue: 282000000000,
-        debt: 13000000000,
-        cash: 118000000000
-    },
-    'AMZN': {
-        name: 'Amazon.com Inc.',
-        sector: 'Consumo',
-        price: 145.30,
-        change: 3.20,
-        marketCap: 1500000000000,
-        pe: 60.5,
-        pb: 8.9,
-        eps: 2.40,
-        bookValue: 16.30,
-        dividend: 0,
-        beta: 1.3,
-        fcf: 35000000000,
-        shares: 10300000000,
-        revenue: 514000000000,
-        debt: 135000000000,
-        cash: 64000000000
-    },
-    'TSLA': {
-        name: 'Tesla Inc.',
-        sector: 'Automotriz',
-        price: 245.60,
-        change: -5.40,
-        marketCap: 780000000000,
-        pe: 75.2,
-        pb: 15.3,
-        eps: 3.26,
-        bookValue: 16.05,
-        dividend: 0,
-        beta: 2.0,
-        fcf: 4400000000,
-        shares: 3170000000,
-        revenue: 81000000000,
-        debt: 9500000000,
-        cash: 29000000000
-    },
-    'META': {
-        name: 'Meta Platforms Inc.',
-        sector: 'Tecnología',
-        price: 310.40,
-        change: 4.10,
-        marketCap: 800000000000,
-        pe: 35.8,
-        pb: 7.1,
-        eps: 8.67,
-        bookValue: 43.70,
-        dividend: 0,
-        beta: 1.15,
-        fcf: 38000000000,
-        shares: 2570000000,
-        revenue: 134000000000,
-        debt: 18000000000,
-        cash: 65000000000
-    },
-    'NVDA': {
-        name: 'NVIDIA Corporation',
-        sector: 'Tecnología',
-        price: 460.15,
-        change: 12.80,
-        marketCap: 1100000000000,
-        pe: 110.5,
-        pb: 52.3,
-        eps: 4.16,
-        bookValue: 8.79,
-        dividend: 0.16,
-        beta: 1.7,
-        fcf: 27000000000,
-        shares: 2400000000,
-        revenue: 60000000000,
-        debt: 8500000000,
-        cash: 18000000000
-    },
-    'JPM': {
-        name: 'JPMorgan Chase & Co.',
-        sector: 'Finanzas',
-        price: 145.80,
-        change: 0.50,
-        marketCap: 420000000000,
-        pe: 10.2,
-        pb: 1.5,
-        eps: 14.30,
-        bookValue: 97.20,
-        dividend: 4.00,
-        beta: 1.1,
-        fcf: 0, // Bancos usan diferentes métricas
-        shares: 2880000000,
-        revenue: 128000000000,
-        debt: 0, // Los bancos tienen deuda como parte del negocio
-        cash: 0
-    },
-    'V': {
-        name: 'Visa Inc.',
-        sector: 'Finanzas',
-        price: 245.60,
-        change: 1.20,
-        marketCap: 520000000000,
-        pe: 30.5,
-        pb: 13.8,
-        eps: 8.05,
-        bookValue: 17.80,
-        dividend: 1.80,
-        beta: 0.95,
-        fcf: 19000000000,
-        shares: 2110000000,
-        revenue: 33000000000,
-        debt: 20000000000,
-        cash: 17000000000
-    },
-    'WMT': {
-        name: 'Walmart Inc.',
-        sector: 'Consumo',
-        price: 165.30,
-        change: -0.30,
-        marketCap: 445000000000,
-        pe: 25.8,
-        pb: 5.4,
-        eps: 6.40,
-        bookValue: 30.60,
-        dividend: 2.28,
-        beta: 0.5,
-        fcf: 11000000000,
-        shares: 2690000000,
-        revenue: 611000000000,
-        debt: 83000000000,
-        cash: 10000000000
-    }
-};
+// Cache de datos
+const dataCache = new Map();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 
 // ============================================
-// Obtener datos de stock
+// Obtener datos de stock en tiempo real
 // ============================================
 async function fetchStockData(ticker) {
-    // Normalizar ticker
     ticker = ticker.toUpperCase().trim();
     
-    // Verificar si tenemos datos mock
-    if (MOCK_DATA[ticker]) {
-        const data = MOCK_DATA[ticker];
+    // Verificar cache
+    const cached = dataCache.get(ticker);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+        console.log(`[Cache] Usando datos en cache para ${ticker}`);
+        return cached.data;
+    }
+    
+    try {
+        // Intentar obtener de Yahoo Finance
+        const data = await fetchYahooFinance(ticker);
+        
+        // Guardar en cache
+        dataCache.set(ticker, {
+            data: data,
+            timestamp: Date.now()
+        });
+        
+        return data;
+    } catch (error) {
+        console.error(`Error fetching ${ticker}:`, error);
+        // Fallback a datos sintéticos
+        return generateSyntheticData(ticker);
+    }
+}
+
+// ============================================
+// Yahoo Finance API
+// ============================================
+async function fetchYahooFinance(ticker) {
+    const url = `${API_ENDPOINTS.yahoo.quote}${ticker}?interval=1d&range=1y`;
+    
+    // Usar CORS proxy para evitar bloqueos
+    const proxyUrls = [
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+        `https://corsproxy.io/?${encodeURIComponent(url)}`
+    ];
+    
+    let lastError;
+    
+    for (const proxyUrl of proxyUrls) {
+        try {
+            const response = await fetch(proxyUrl, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+            
+            if (!response.ok) continue;
+            
+            const json = await response.json();
+            
+            if (json.chart?.error) {
+                throw new Error(json.chart.error.description);
+            }
+            
+            const result = json.chart?.result?.[0];
+            if (!result) throw new Error('No data available');
+            
+            const meta = result.meta;
+            const timestamps = result.timestamp;
+            const prices = result.indicators?.quote?.[0];
+            
+            // Calcular métricas
+            const currentPrice = meta.regularMarketPrice || meta.previousClose;
+            const previousClose = meta.chartPreviousClose || meta.previousClose;
+            const change = currentPrice - previousClose;
+            const changePercent = (change / previousClose) * 100;
+            
+            // Calcular métricas adicionales
+            const fiftyTwoWeekHigh = meta.fiftyTwoWeekHigh || currentPrice * 1.2;
+            const fiftyTwoWeekLow = meta.fiftyTwoWeekLow || currentPrice * 0.8;
+            
+            // Calcular beta y volatilidad de los datos históricos
+            const volatility = calculateVolatilityFromPrices(prices?.close || []);
+            
+            // Estimar métricas fundamentales
+            const fundamentals = estimateFundamentals(ticker, currentPrice, meta);
+            
+            return {
+                ticker: ticker,
+                name: meta.shortName || meta.longName || meta.symbol,
+                price: currentPrice,
+                change: change,
+                changePercent: changePercent,
+                currency: meta.currency || 'USD',
+                marketCap: meta.marketCap || fundamentals.estimatedMarketCap,
+                sector: fundamentals.sector,
+                pe: fundamentals.pe,
+                pb: fundamentals.pb,
+                eps: fundamentals.eps,
+                bookValue: fundamentals.bookValue,
+                dividend: fundamentals.dividend,
+                dividendYield: fundamentals.dividendYield,
+                beta: fundamentals.beta,
+                fcf: fundamentals.fcf,
+                shares: fundamentals.shares,
+                revenue: fundamentals.revenue,
+                debt: fundamentals.debt,
+                cash: fundamentals.cash,
+                fiftyTwoWeekHigh: fiftyTwoWeekHigh,
+                fiftyTwoWeekLow: fiftyTwoWeekLow,
+                volatility: volatility,
+                historicalData: {
+                    timestamps: timestamps,
+                    prices: prices
+                },
+                source: 'yahoo',
+                lastUpdated: new Date().toISOString()
+            };
+            
+        } catch (error) {
+            lastError = error;
+            continue;
+        }
+    }
+    
+    throw lastError || new Error('All proxies failed');
+}
+
+// ============================================
+// Calcular volatilidad desde precios históricos
+// ============================================
+function calculateVolatilityFromPrices(prices) {
+    if (!prices || prices.length < 2) return 0.25;
+    
+    // Filtrar valores nulos
+    const validPrices = prices.filter(p => p !== null && p !== undefined);
+    if (validPrices.length < 2) return 0.25;
+    
+    // Calcular retornos diarios
+    const returns = [];
+    for (let i = 1; i < validPrices.length; i++) {
+        returns.push((validPrices[i] - validPrices[i-1]) / validPrices[i-1]);
+    }
+    
+    // Calcular desviación estándar
+    const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
+    const variance = returns.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / returns.length;
+    const stdDev = Math.sqrt(variance);
+    
+    // Anualizar (252 días hábiles)
+    return stdDev * Math.sqrt(252);
+}
+
+// ============================================
+// Estimar métricas fundamentales
+// ============================================
+function estimateFundamentals(ticker, price, meta) {
+    // Base de datos de sectores y métricas típicas
+    const sectorData = {
+        'AAPL': { sector: 'Tecnología', pe: 28, pb: 45, beta: 1.2 },
+        'MSFT': { sector: 'Tecnología', pe: 32, pb: 12, beta: 0.9 },
+        'GOOGL': { sector: 'Tecnología', pe: 25, pb: 6, beta: 1.05 },
+        'AMZN': { sector: 'Consumo', pe: 60, pb: 9, beta: 1.3 },
+        'TSLA': { sector: 'Automotriz', pe: 75, pb: 15, beta: 2.0 },
+        'META': { sector: 'Tecnología', pe: 36, pb: 7, beta: 1.15 },
+        'NVDA': { sector: 'Tecnología', pe: 110, pb: 52, beta: 1.7 },
+        'JPM': { sector: 'Finanzas', pe: 10, pb: 1.5, beta: 1.1 },
+        'V': { sector: 'Finanzas', pe: 30, pb: 14, beta: 0.95 },
+        'WMT': { sector: 'Consumo', pe: 26, pb: 5, beta: 0.5 }
+    };
+    
+    const known = sectorData[ticker];
+    
+    if (known) {
+        const eps = price / known.pe;
+        const bookValue = price / known.pb;
+        const marketCap = meta.marketCap || price * 10000000000;
+        const shares = marketCap / price;
+        
         return {
-            ticker: ticker,
-            name: data.name,
-            price: data.price,
-            change: data.change,
-            changePercent: (data.change / (data.price - data.change)) * 100,
-            sector: data.sector,
-            marketCap: data.marketCap,
-            pe: data.pe,
-            pb: data.pb,
-            eps: data.eps,
-            bookValue: data.bookValue,
-            dividend: data.dividend,
-            beta: data.beta,
-            fcf: data.fcf,
-            shares: data.shares,
-            revenue: data.revenue,
-            debt: data.debt,
-            cash: data.cash,
-            source: 'mock'
+            sector: known.sector,
+            pe: known.pe,
+            pb: known.pb,
+            eps: eps,
+            bookValue: bookValue,
+            beta: known.beta,
+            dividend: ticker === 'AAPL' ? 0.96 : ticker === 'MSFT' ? 2.72 : ticker === 'JPM' ? 4.0 : ticker === 'V' ? 1.8 : ticker === 'WMT' ? 2.28 : 0,
+            dividendYield: 0,
+            fcf: eps * shares * 0.8,
+            shares: shares,
+            revenue: eps * shares * 6, // Aproximación
+            debt: marketCap * 0.1,
+            cash: marketCap * 0.15,
+            estimatedMarketCap: marketCap
         };
     }
     
-    // Si no está en mock, generar datos sintéticos
-    return generateSyntheticData(ticker);
+    // Para tickers desconocidos, inferir del precio
+    return inferFromPrice(ticker, price);
 }
 
 // ============================================
-// Generar datos sintéticos para tickers desconocidos
+// Inferir métricas del precio
 // ============================================
-function generateSyntheticData(ticker) {
-    // Generar precio base pseudo-aleatorio pero consistente para el mismo ticker
-    const hash = ticker.split('').reduce((a, b) => {
-        a = ((a << 5) - a) + b.charCodeAt(0);
-        return a & a;
-    }, 0);
-    
-    const basePrice = 50 + (Math.abs(hash) % 450);
+function inferFromPrice(ticker, price) {
+    const hash = ticker.split('').reduce((a, b) => ((a << 5) - a) + b.charCodeAt(0), 0);
     const sectors = ['Tecnología', 'Finanzas', 'Salud', 'Consumo', 'Energía', 'Industriales'];
     const sector = sectors[Math.abs(hash) % sectors.length];
     
-    // Métricas basadas en el sector
     const sectorMetrics = {
-        'Tecnología': { pe: 25, pb: 8, beta: 1.2, growth: 0.15 },
-        'Finanzas': { pe: 12, pb: 1.2, beta: 1.1, growth: 0.08 },
-        'Salud': { pe: 20, pb: 4, beta: 0.8, growth: 0.10 },
-        'Consumo': { pe: 18, pb: 3, beta: 0.7, growth: 0.06 },
-        'Energía': { pe: 10, pb: 1.5, beta: 1.3, growth: 0.04 },
-        'Industriales': { pe: 15, pb: 2.5, beta: 1.0, growth: 0.07 }
+        'Tecnología': { pe: 25, pb: 8, beta: 1.2 },
+        'Finanzas': { pe: 12, pb: 1.2, beta: 1.1 },
+        'Salud': { pe: 20, pb: 4, beta: 0.8 },
+        'Consumo': { pe: 18, pb: 3, beta: 0.7 },
+        'Energía': { pe: 10, pb: 1.5, beta: 1.3 },
+        'Industriales': { pe: 15, pb: 2.5, beta: 1.0 }
     };
     
     const metrics = sectorMetrics[sector];
-    const eps = basePrice / metrics.pe;
-    const bookValue = basePrice / metrics.pb;
+    const eps = price / metrics.pe;
+    const bookValue = price / metrics.pb;
     const shares = 1000000000 + (Math.abs(hash) % 9000000000);
-    const fcf = eps * shares * 0.8; // Aproximación
+    const marketCap = price * shares;
     
     return {
-        ticker: ticker,
-        name: `${ticker} Corp.`,
-        price: basePrice,
-        change: (Math.random() - 0.5) * basePrice * 0.05,
-        changePercent: (Math.random() - 0.5) * 5,
         sector: sector,
-        marketCap: basePrice * shares,
-        pe: metrics.pe + (Math.random() - 0.5) * 5,
-        pb: metrics.pb + (Math.random() - 0.5) * 0.5,
+        pe: metrics.pe,
+        pb: metrics.pb,
         eps: eps,
         bookValue: bookValue,
-        dividend: Math.random() > 0.3 ? (Math.random() * 3) : 0,
-        beta: metrics.beta + (Math.random() - 0.5) * 0.3,
-        fcf: fcf,
+        beta: metrics.beta,
+        dividend: Math.random() > 0.4 ? (Math.random() * 3) : 0,
+        dividendYield: 0,
+        fcf: eps * shares * 0.8,
         shares: shares,
-        revenue: fcf * (1.5 + Math.random()),
-        debt: fcf * (0.5 + Math.random()),
-        cash: fcf * (0.3 + Math.random() * 0.5),
-        source: 'synthetic'
+        revenue: eps * shares * 6,
+        debt: marketCap * 0.1,
+        cash: marketCap * 0.15,
+        estimatedMarketCap: marketCap
     };
 }
 
 // ============================================
-// Obtener datos históricos (para gráficos)
+// Generar datos sintéticos (fallback)
+// ============================================
+function generateSyntheticData(ticker) {
+    const hash = ticker.split('').reduce((a, b) => ((a << 5) - a) + b.charCodeAt(0), 0);
+    const basePrice = 50 + (Math.abs(hash) % 450);
+    
+    const fundamentals = inferFromPrice(ticker, basePrice);
+    
+    return {
+        ticker: ticker,
+        name: `${ticker} Corporation`,
+        price: basePrice,
+        change: (Math.random() - 0.5) * basePrice * 0.05,
+        changePercent: (Math.random() - 0.5) * 5,
+        currency: 'USD',
+        ...fundamentals,
+        fiftyTwoWeekHigh: basePrice * 1.3,
+        fiftyTwoWeekLow: basePrice * 0.7,
+        volatility: 0.25,
+        source: 'synthetic',
+        lastUpdated: new Date().toISOString()
+    };
+}
+
+// ============================================
+// Buscar tickers
+// ============================================
+async function searchTickers(query) {
+    if (!query || query.length < 2) return [];
+    
+    try {
+        const url = `${API_ENDPOINTS.yahoo.search}?q=${encodeURIComponent(query)}&quotesCount=10&newsCount=0`;
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+        
+        const response = await fetch(proxyUrl);
+        if (!response.ok) throw new Error('Search failed');
+        
+        const data = await response.json();
+        
+        return (data.quotes || []).map(q => ({
+            ticker: q.symbol,
+            name: q.shortname || q.longname || q.symbol,
+            exchange: q.exchange,
+            type: q.quoteType
+        }));
+    } catch (error) {
+        console.error('Search error:', error);
+        return [];
+    }
+}
+
+// ============================================
+// Obtener datos históricos
 // ============================================
 async function fetchHistoricalData(ticker, period = '1Y') {
-    // Generar datos históricos sintéticos
-    const data = await fetchStockData(ticker);
-    const currentPrice = data.price;
-    
     const periods = {
-        '1M': 30,
-        '3M': 90,
-        '6M': 180,
-        '1Y': 365,
-        '5Y': 365 * 5
+        '1M': { range: '1mo', interval: '1d' },
+        '3M': { range: '3mo', interval: '1d' },
+        '6M': { range: '6mo', interval: '1d' },
+        '1Y': { range: '1y', interval: '1d' },
+        '5Y': { range: '5y', interval: '1wk' }
     };
     
-    const days = periods[period] || 365;
-    const prices = [];
-    let price = currentPrice;
+    const config = periods[period] || periods['1Y'];
+    const url = `${API_ENDPOINTS.yahoo.quote}${ticker}?interval=${config.interval}&range=${config.range}`;
     
-    for (let i = days; i >= 0; i--) {
+    try {
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+        const response = await fetch(proxyUrl);
+        const json = await response.json();
+        
+        const result = json.chart?.result?.[0];
+        if (!result) throw new Error('No data');
+        
+        const timestamps = result.timestamp;
+        const prices = result.indicators?.quote?.[0];
+        
+        return timestamps.map((t, i) => ({
+            date: new Date(t * 1000).toISOString().split('T')[0],
+            open: prices.open?.[i],
+            high: prices.high?.[i],
+            low: prices.low?.[i],
+            close: prices.close?.[i],
+            volume: prices.volume?.[i]
+        })).filter(d => d.close !== null);
+        
+    } catch (error) {
+        console.error('Historical data error:', error);
+        return generateSyntheticHistoricalData(ticker, period);
+    }
+}
+
+// ============================================
+// Generar datos históricos sintéticos
+// ============================================
+function generateSyntheticHistoricalData(ticker, period) {
+    const days = { '1M': 30, '3M': 90, '6M': 180, '1Y': 365, '5Y': 365 * 5 };
+    const numDays = days[period] || 365;
+    
+    const data = [];
+    let price = 100;
+    
+    for (let i = numDays; i >= 0; i--) {
         const date = new Date();
         date.setDate(date.getDate() - i);
         
-        // Simular movimiento aleatorio con tendencia
-        const change = (Math.random() - 0.48) * price * 0.02;
-        price = price + change;
+        const change = (Math.random() - 0.48) * 0.02;
+        price = price * (1 + change);
         
-        prices.push({
+        data.push({
             date: date.toISOString().split('T')[0],
-            price: price,
+            open: price * 0.99,
+            high: price * 1.02,
+            low: price * 0.98,
+            close: price,
             volume: Math.floor(Math.random() * 10000000) + 1000000
         });
     }
     
-    return prices;
-}
-
-// ============================================
-// Obtener noticias
-// ============================================
-async function fetchNews(ticker) {
-    // Simular noticias
-    const headlines = [
-        `${ticker} reporta resultados trimestrales superando expectativas`,
-        `Analistas actualizan precio objetivo de ${ticker}`,
-        `${ticker} anuncia nuevo programa de recompra de acciones`,
-        `Sector ${await fetchStockData(ticker).then(d => d.sector)} muestra fortaleza`,
-        `${ticker} expande operaciones a nuevos mercados`
-    ];
-    
-    return headlines.map((headline, i) => ({
-        title: headline,
-        source: ['Bloomberg', 'Reuters', 'CNBC', 'MarketWatch'][i % 4],
-        date: new Date(Date.now() - i * 86400000).toISOString(),
-        url: '#'
-    }));
+    return data;
 }
 
 // ============================================
 // Calcular métricas derivadas
 // ============================================
 function calculateDerivedMetrics(data) {
+    const ev = data.marketCap + data.debt - data.cash;
+    const ebitda = data.revenue * 0.15; // Estimación
+    
     return {
-        // EV/EBITDA aproximado
-        evEbitda: (data.marketCap + data.debt - data.cash) / (data.revenue * 0.15),
-        
-        // ROE
+        evEbitda: ebitda > 0 ? ev / ebitda : null,
         roe: (data.eps / data.bookValue) * 100,
-        
-        // P/FCF
-        pFcf: data.marketCap / data.fcf,
-        
-        // Dividend Yield
-        dividendYield: (data.dividend / data.price) * 100,
-        
-        // Net Cash/Debt
+        pFcf: data.fcf > 0 ? data.marketCap / data.fcf : null,
+        dividendYield: data.dividend > 0 ? (data.dividend / data.price) * 100 : 0,
         netCash: data.cash - data.debt,
-        
-        // FCF Yield
-        fcfYield: (data.fcf / data.marketCap) * 100
+        fcfYield: data.fcf > 0 ? (data.fcf / data.marketCap) * 100 : 0,
+        priceTo52WRange: data.fiftyTwoWeekHigh > data.fiftyTwoWeekLow ? 
+            ((data.price - data.fiftyTwoWeekLow) / (data.fiftyTwoWeekHigh - data.fiftyTwoWeekLow)) * 100 : 50
     };
 }
-
-// ============================================
-// Configurar API key
-// ============================================
-function setApiKey(provider, key) {
-    if (API_CONFIG[provider]) {
-        API_CONFIG[provider].apiKey = key;
-        localStorage.setItem(`apiKey_${provider}`, key);
-        return true;
-    }
-    return false;
-}
-
-// ============================================
-// Cargar API keys guardadas
-// ============================================
-function loadApiKeys() {
-    Object.keys(API_CONFIG).forEach(provider => {
-        const key = localStorage.getItem(`apiKey_${provider}`);
-        if (key) {
-            API_CONFIG[provider].apiKey = key;
-        }
-    });
-}
-
-// Inicializar
-loadApiKeys();
 
 // Exportar
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         fetchStockData,
         fetchHistoricalData,
-        fetchNews,
+        searchTickers,
         calculateDerivedMetrics,
-        setApiKey,
-        MOCK_DATA
+        dataCache
     };
 }

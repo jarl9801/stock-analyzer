@@ -1,9 +1,11 @@
 // ============================================
-// APP.JS - Lógica Principal
+// APP.JS - Lógica Principal Mejorada
 // ============================================
 
 // Variables globales
 let currentView = 'analyzer';
+let currentStock = null;
+let isLoading = false;
 
 // ============================================
 // Inicialización
@@ -16,6 +18,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Setup market status
     updateMarketStatus();
+    setInterval(updateMarketStatus, 60000); // Actualizar cada minuto
+    
+    // Setup search autocomplete
+    setupSearchAutocomplete();
     
     // Load saved data
     if (typeof loadPortfolio === 'function') loadPortfolio();
@@ -62,18 +68,126 @@ function switchView(view) {
 }
 
 // ============================================
+// Setup Search Autocomplete
+// ============================================
+function setupSearchAutocomplete() {
+    const searchInput = document.getElementById('ticker-search');
+    
+    searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            searchStock();
+        }
+    });
+}
+
+// ============================================
+// Buscar Stock (con datos automáticos)
+// ============================================
+async function searchStock() {
+    const tickerInput = document.getElementById('ticker-search');
+    const ticker = tickerInput.value.toUpperCase().trim();
+    
+    if (!ticker) {
+        showNotification('Ingresa un ticker', 'error');
+        return;
+    }
+    
+    if (isLoading) return;
+    isLoading = true;
+    
+    // Mostrar loading
+    showLoading(true);
+    
+    try {
+        // Obtener datos de la API
+        const data = await fetchStockData(ticker);
+        
+        currentStock = data;
+        
+        // Actualizar UI con los datos
+        updateStockUI(data);
+        
+        // Auto-llenar campos de valoración con datos obtenidos
+        autoFillValuationFields(data);
+        
+        // Mostrar contenido de análisis
+        document.getElementById('analysis-content').style.display = 'grid';
+        
+        showNotification(`${data.name} cargado correctamente`, 'success');
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Error al cargar datos. Intenta con otro ticker.', 'error');
+    } finally {
+        isLoading = false;
+        showLoading(false);
+    }
+}
+
+// ============================================
+// Actualizar UI con datos del stock
+// ============================================
+function updateStockUI(data) {
+    // Header
+    document.getElementById('stock-name').textContent = data.name;
+    document.getElementById('stock-ticker').textContent = `${data.ticker} • ${data.sector} • ${data.currency}`;
+    
+    const priceSection = document.getElementById('stock-price-section');
+    priceSection.style.display = 'block';
+    
+    document.getElementById('current-price').textContent = formatCurrency(data.price, data.currency);
+    
+    const changeEl = document.getElementById('price-change');
+    const changePercent = data.changePercent || ((data.change / (data.price - data.change)) * 100);
+    const changeSymbol = data.change >= 0 ? '▲' : '▼';
+    
+    changeEl.innerHTML = `${changeSymbol} ${formatCurrency(Math.abs(data.change))} (${Math.abs(changePercent).toFixed(2)}%)`;
+    changeEl.className = `price-change ${data.change >= 0 ? 'positive' : 'negative'}`;
+}
+
+// ============================================
+// Auto-llenar campos de valoración
+// ============================================
+function autoFillValuationFields(data) {
+    // DCF Fields
+    if (data.fcf && document.getElementById('dcf-fcf')) {
+        document.getElementById('dcf-fcf').value = (data.fcf / 1000000).toFixed(0); // Convertir a millones
+    }
+    if (data.shares && document.getElementById('dcf-shares')) {
+        document.getElementById('dcf-shares').value = (data.shares / 1000000).toFixed(0); // Convertir a millones
+    }
+    
+    // DDM Fields
+    if (data.dividend && document.getElementById('ddm-dividend')) {
+        document.getElementById('ddm-dividend').value = data.dividend.toFixed(2);
+    }
+    
+    // Multiples Fields
+    if (data.eps && document.getElementById('mult-eps')) {
+        document.getElementById('mult-eps').value = data.eps.toFixed(2);
+    }
+    if (data.bookValue && document.getElementById('mult-bv')) {
+        document.getElementById('mult-bv').value = data.bookValue.toFixed(2);
+    }
+    if (data.pe && document.getElementById('mult-pe')) {
+        document.getElementById('mult-pe').value = data.pe.toFixed(1);
+    }
+    if (data.pb && document.getElementById('mult-pb')) {
+        document.getElementById('mult-pb').value = data.pb.toFixed(1);
+    }
+}
+
+// ============================================
 // Estado del Mercado
 // ============================================
 function updateMarketStatus() {
     const now = new Date();
-    const hour = now.getHours();
-    const day = now.getDay();
+    const hour = now.getUTCHours();
+    const day = now.getUTCDay();
     
-    // NYSE: 9:30 AM - 4:00 PM ET, Monday-Friday
-    // Simplificación: consideramos abierto 9:30-16:00 UTC-5
-    
+    // NYSE: 14:30 - 21:00 UTC (9:30 AM - 4:00 PM ET)
     const isWeekday = day >= 1 && day <= 5;
-    const isMarketHours = hour >= 14 && hour < 21; // Aproximado a UTC
+    const isMarketHours = hour >= 14 && hour < 21;
     
     const isOpen = isWeekday && isMarketHours;
     
@@ -90,77 +204,144 @@ function updateMarketStatus() {
 }
 
 // ============================================
+// Loading State
+// ============================================
+function showLoading(show) {
+    const searchBtn = document.querySelector('.btn-search');
+    if (show) {
+        searchBtn.innerHTML = '<div class="spinner" style="width: 20px; height: 20px; border-width: 2px;"></div>';
+        searchBtn.disabled = true;
+    } else {
+        searchBtn.innerHTML = '🔍';
+        searchBtn.disabled = false;
+    }
+}
+
+// ============================================
+// Notificaciones
+// ============================================
+function showNotification(message, type = 'info') {
+    // Crear elemento de notificación
+    const notif = document.createElement('div');
+    notif.style.cssText = `
+        position: fixed;
+        top: 24px;
+        right: 24px;
+        padding: 16px 24px;
+        border-radius: 12px;
+        font-weight: 500;
+        z-index: 1000;
+        animation: slideIn 0.3s ease;
+        ${type === 'success' ? 'background: var(--accent-green-dim); color: var(--accent-green); border: 1px solid rgba(0, 208, 132, 0.3);' : 
+          type === 'error' ? 'background: var(--accent-red-dim); color: var(--accent-red); border: 1px solid rgba(255, 71, 87, 0.3);' :
+          'background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border);'}
+    `;
+    notif.textContent = message;
+    
+    document.body.appendChild(notif);
+    
+    setTimeout(() => {
+        notif.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => notif.remove(), 300);
+    }, 3000);
+}
+
+// ============================================
 // Screener
 // ============================================
-function runScreener() {
+async function runScreener() {
     const market = document.getElementById('filter-market').value;
     const sector = document.getElementById('filter-sector').value;
     const peMax = parseFloat(document.getElementById('filter-pe').value);
     const dividendMin = parseFloat(document.getElementById('filter-dividend').value);
     const discountMin = parseFloat(document.getElementById('filter-discount').value);
     
-    // Simular resultados
-    const mockResults = [
-        { ticker: 'AAPL', name: 'Apple Inc.', price: 175.50, pe: 28.5, dividend: 0.5, discount: 15 },
-        { ticker: 'MSFT', name: 'Microsoft Corp.', price: 330.20, pe: 32.1, dividend: 0.7, discount: 8 },
-        { ticker: 'JNJ', name: 'Johnson & Johnson', price: 155.80, pe: 16.2, dividend: 2.9, discount: 22 },
-        { ticker: 'V', name: 'Visa Inc.', price: 245.60, pe: 30.5, dividend: 0.7, discount: 12 },
-        { ticker: 'PG', name: 'Procter & Gamble', price: 145.30, pe: 24.8, dividend: 2.4, discount: 18 }
-    ];
-    
-    // Filtrar
-    let results = mockResults;
-    
-    if (peMax) {
-        results = results.filter(r => r.pe <= peMax);
-    }
-    
-    if (dividendMin) {
-        results = results.filter(r => r.dividend >= dividendMin);
-    }
-    
-    if (discountMin) {
-        results = results.filter(r => r.discount >= discountMin);
-    }
-    
-    // Mostrar resultados
     const container = document.getElementById('screener-results');
+    container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
     
-    if (results.length === 0) {
-        container.innerHTML = '<p class="placeholder-text">No se encontraron resultados con esos filtros</p>';
-        return;
-    }
+    // Lista de tickers populares para screener
+    const tickers = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'META', 'NVDA', 'JPM', 'V', 'WMT', 
+                     'JNJ', 'UNH', 'XOM', 'BAC', 'PG', 'HD', 'CVX', 'MA', 'LLY', 'ABBV'];
     
-    container.innerHTML = `
-        <table class="screener-table">
-            <thead>
-                <tr>
-                    <th>Ticker</th>
-                    <th>Nombre</th>
-                    <th>Precio</th>
-                    <th>P/E</th>
-                    <th>Dividendo%</th>
-                    <th>Descuento DCF</th>
-                    <th>Acción</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${results.map(r => `
+    try {
+        // Obtener datos de todos los tickers
+        const results = await Promise.all(
+            tickers.map(async t => {
+                try {
+                    return await fetchStockData(t);
+                } catch (e) {
+                    return null;
+                }
+            })
+        );
+        
+        let filtered = results.filter(r => r !== null);
+        
+        // Aplicar filtros
+        if (sector && sector !== 'all') {
+            const sectorMap = {
+                'tech': 'Tecnología',
+                'finance': 'Finanzas',
+                'health': 'Salud',
+                'consumer': 'Consumo',
+                'energy': 'Energía'
+            };
+            filtered = filtered.filter(r => r.sector === sectorMap[sector]);
+        }
+        
+        if (peMax) {
+            filtered = filtered.filter(r => r.pe <= peMax);
+        }
+        
+        if (dividendMin) {
+            filtered = filtered.filter(r => (r.dividendYield || (r.dividend / r.price * 100)) >= dividendMin);
+        }
+        
+        // Ordenar por descuento estimado (simulado)
+        filtered.sort((a, b) => (b.pe - a.pe) - (a.pe - b.pe));
+        
+        if (filtered.length === 0) {
+            container.innerHTML = '<p class="placeholder-text">No se encontraron resultados con esos filtros</p>';
+            return;
+        }
+        
+        container.innerHTML = `
+            <table class="screener-table">
+                <thead>
                     <tr>
-                        <td><strong>${r.ticker}</strong></td>
-                        <td>${r.name}</td>
-                        <td>$${r.price.toFixed(2)}</td>
-                        <td>${r.pe.toFixed(1)}</td>
-                        <td>${r.dividend.toFixed(1)}%</td>
-                        <td class="${r.discount > 15 ? 'positive' : ''}">${r.discount}%</td>
-                        <td>
-                            <button class="btn btn-sm" onclick="analyzeTicker('${r.ticker}')">Analizar</button>
-                        </td>
+                        <th>Ticker</th>
+                        <th>Nombre</th>
+                        <th>Sector</th>
+                        <th>Precio</th>
+                        <th>P/E</th>
+                        <th>Div Yield</th>
+                        <th>Acción</th>
                     </tr>
-                `).join('')}
-            </tbody>
-        </table>
-    `;
+                </thead>
+                <tbody>
+                    ${filtered.map(r => {
+                        const divYield = r.dividend > 0 ? ((r.dividend / r.price) * 100).toFixed(2) : '0.00';
+                        return `
+                            <tr>
+                                <td><strong>${r.ticker}</strong></td>
+                                <td>${r.name}</td>
+                                <td>${r.sector}</td>
+                                <td>${formatCurrency(r.price)}</td>
+                                <td>${r.pe.toFixed(1)}</td>
+                                <td>${divYield}%</td>
+                                <td>
+                                    <button class="btn btn-sm" onclick="analyzeTicker('${r.ticker}')"
+                                        style="padding: 8px 16px; font-size: 13px;">Analizar</button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            </table>
+        `;
+    } catch (error) {
+        container.innerHTML = '<p class="placeholder-text">Error al cargar datos. Intenta de nuevo.</p>';
+    }
 }
 
 function analyzeTicker(ticker) {
@@ -172,12 +353,27 @@ function analyzeTicker(ticker) {
 // ============================================
 // Utilidades
 // ============================================
+function formatCurrency(num, currency = 'USD') {
+    if (num === null || num === undefined) return 'N/A';
+    const symbol = currency === 'USD' ? '$' : currency + ' ';
+    return symbol + num.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
 function formatNumber(num, decimals = 2) {
     if (num === null || num === undefined) return 'N/A';
-    return num.toLocaleString('en-US', {
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals
-    });
+    
+    if (num >= 1000000000) {
+        return (num / 1000000000).toFixed(decimals) + 'B';
+    } else if (num >= 1000000) {
+        return (num / 1000000).toFixed(decimals) + 'M';
+    } else if (num >= 1000) {
+        return (num / 1000).toFixed(decimals) + 'K';
+    }
+    
+    return num.toFixed(decimals);
 }
 
 function formatPercent(num) {
@@ -202,3 +398,19 @@ document.addEventListener('keydown', function(e) {
         modals.forEach(m => m.remove());
     }
 });
+
+// ============================================
+// Animaciones CSS
+// ============================================
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOut {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+    }
+`;
+document.head.appendChild(style);
