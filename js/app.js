@@ -107,13 +107,14 @@ async function searchStock() {
         // Actualizar UI con los datos
         updateStockUI(data);
         
-        // Auto-llenar campos de valoración con datos obtenidos
-        autoFillValuationFields(data);
-        
         // Mostrar contenido de análisis
         document.getElementById('analysis-content').style.display = 'grid';
         
-        showNotification(`${data.name} cargado correctamente`, 'success');
+        // Realizar análisis completo automáticamente
+        showNotification('Calculando valoraciones...', 'info');
+        const analysis = await performFullAnalysis(data);
+        
+        showNotification(`${data.name} analizado completamente`, 'success');
         
     } catch (error) {
         console.error('Error:', error);
