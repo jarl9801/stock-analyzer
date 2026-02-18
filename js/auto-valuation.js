@@ -191,22 +191,24 @@ function calculateMultiplesAuto(data) {
     const valuePB = data.bookValue * pbSector;
     
     // Valor por EV/EBITDA (si tenemos datos)
-    let valueEV EBITDA = null;
+    let valueEVEBITDA = null;
     if (data.marketCap && data.debt && data.cash && data.revenue) {
         const ev = data.marketCap + data.debt - data.cash;
         const ebitda = data.revenue * 0.15; // Estimación
         const evEbitdaSector = data.sector === 'Tecnología' ? 18 : 
                                data.sector === 'Finanzas' ? 10 : 12;
-        const targetEbitda = ev / evEbitdaSector;
-        valueEV EBITDA = (targetEbitda * evEbitdaSector - data.debt + data.cash) / data.shares;
+        const impliedEbitda = ev / evEbitdaSector;
+        const targetEV = impliedEbitda * evEbitdaSector;
+        const equityValue = targetEV - data.debt + data.cash;
+        valueEVEBITDA = equityValue / data.shares;
     }
     
     // Promedio ponderado
     let weightedValue = (valuePE * 0.5) + (valuePB * 0.3);
-    if (valueEV EBITDA) {
-        weightedValue += valueEV EBITDA * 0.2;
+    if (valueEVEBITDA) {
+        weightedValue += valueEVEBITDA * 0.2;
     } else {
-        weightedValue /= 0.8; // Normalizar
+        weightedValue = weightedValue / 0.8; // Normalizar
     }
     
     // Upside
@@ -215,7 +217,7 @@ function calculateMultiplesAuto(data) {
     return {
         valuePE: valuePE,
         valuePB: valuePB,
-        valueEV EBITDA: valueEV EBITDA,
+        valueEVEBITDA: valueEVEBITDA,
         valueAvg: weightedValue,
         peUsed: adjustedPE,
         pbUsed: pbSector,
