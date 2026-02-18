@@ -100,7 +100,9 @@ async function searchStock() {
     
     try {
         // Obtener datos de la API
+        console.log('[App] Fetching data for:', ticker);
         const data = await fetchStockData(ticker);
+        console.log('[App] Data received:', data);
         
         currentStock = data;
         
@@ -112,13 +114,16 @@ async function searchStock() {
         
         // Realizar análisis completo automáticamente
         showNotification('Calculando valoraciones...', 'info');
+        console.log('[App] Starting full analysis...');
+        
         const analysis = await performFullAnalysis(data);
+        console.log('[App] Analysis completed:', analysis);
         
         showNotification(`${data.name} analizado completamente`, 'success');
         
     } catch (error) {
-        console.error('Error:', error);
-        showNotification('Error al cargar datos. Intenta con otro ticker.', 'error');
+        console.error('[App] Error:', error);
+        showNotification('Error: ' + error.message, 'error');
     } finally {
         isLoading = false;
         showLoading(false);

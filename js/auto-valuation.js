@@ -560,19 +560,28 @@ function updateRiskAssessment(metrics) {
 // Función principal de análisis automático
 // ============================================
 async function performFullAnalysis(data) {
-    // Calcular todas las valoraciones
-    const valuations = calculateAllValuations(data);
-    
-    // Actualizar UI de valoraciones
-    updateAutoValuationUI(valuations, data);
-    
-    // Calcular métricas de riesgo
-    const riskMetrics = calculateAutoRiskMetrics(data, valuations);
-    
-    // Actualizar UI de riesgo
-    updateAutoRiskUI(riskMetrics);
-    
-    return { valuations, riskMetrics };
+    try {
+        console.log('[AutoValuation] Starting analysis for:', data.ticker);
+        
+        // Calcular todas las valoraciones
+        const valuations = calculateAllValuations(data);
+        console.log('[AutoValuation] Valuations calculated:', valuations);
+        
+        // Actualizar UI de valoraciones
+        updateAutoValuationUI(valuations, data);
+        
+        // Calcular métricas de riesgo
+        const riskMetrics = calculateAutoRiskMetrics(data, valuations);
+        console.log('[AutoValuation] Risk metrics calculated:', riskMetrics);
+        
+        // Actualizar UI de riesgo
+        updateAutoRiskUI(riskMetrics);
+        
+        return { valuations, riskMetrics };
+    } catch (error) {
+        console.error('[AutoValuation] Error in performFullAnalysis:', error);
+        throw error;
+    }
 }
 
 // Exportar funciones

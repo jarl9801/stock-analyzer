@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Calculations</title>
+</head>
+<body>
+    <h1>Test de Cálculos</h1>
+    <div id="result"></div>
+    
+    <script src="js/data-fetcher.js"></script>
+    <script src="js/auto-valuation.js"></script>
+    <script>
+        async function test() {
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                // Test 1: Fetch data
+                resultDiv.innerHTML += '<p>1. Obteniendo datos de AAPL...</p>';
+                const data = await fetchStockData('AAPL');
+                resultDiv.innerHTML += `<p>✅ Datos: ${data.name}, Precio: $${data.price}</p>`;
+                
+                // Test 2: Calculate DCF
+                resultDiv.innerHTML += '<p>2. Calculando DCF...</p>';
+                const dcf = calculateDCFAuto(data);
+                if (dcf) {
+                    resultDiv.innerHTML += `<p>✅ DCF: $${dcf.valuePerShare.toFixed(2)}</p>`;
+                } else {
+                    resultDiv.innerHTML += '<p>❌ DCF retornó null</p>';
+                }
+                
+                // Test 3: Calculate DDM
+                resultDiv.innerHTML += '<p>3. Calculando DDM...</p>';
+                const ddm = calculateDDMAuto(data);
+                if (ddm) {
+                    resultDiv.innerHTML += `<p>✅ DDM: $${ddm.valuePerShare.toFixed(2)}</p>`;
+                } else {
+                    resultDiv.innerHTML += '<p>❌ DDM retornó null (puede ser normal si no hay dividendos)</p>';
+                }
+                
+                // Test 4: Calculate Multiples
+                resultDiv.innerHTML += '<p>4. Calculando Múltiplos...</p>';
+                const mult = calculateMultiplesAuto(data);
+                if (mult) {
+                    resultDiv.innerHTML += `<p>✅ Múltiplos: $${mult.valueAvg.toFixed(2)}</p>`;
+                } else {
+                    resultDiv.innerHTML += '<p>❌ Múltiplos retornó null</p>';
+                }
+                
+                // Test 5: Full Analysis
+                resultDiv.innerHTML += '<p>5. Análisis completo...</p>';
+                const analysis = await performFullAnalysis(data);
+                resultDiv.innerHTML += `<p>✅ Análisis completo - Valor justo: $${analysis.valuations.fairValue?.toFixed(2) || 'N/A'}</p>`;
+                
+            } catch (error) {
+                resultDiv.innerHTML += `<p style="color:red">❌ Error: ${error.message}</p>`;
+                console.error(error);
+            }
+        }
+        
+        test();
+    </script>
+</body>
+</html>
