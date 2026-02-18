@@ -585,3 +585,15 @@ if (typeof module !== 'undefined' && module.exports) {
         performFullAnalysis
     };
 }
+
+// Hacer funciones disponibles globalmente para el navegador
+if (typeof window !== 'undefined') {
+    window.calculateDCFAuto = calculateDCFAuto;
+    window.calculateDDMAuto = calculateDDMAuto;
+    window.calculateMultiplesAuto = calculateMultiplesAuto;
+    window.calculateAllValuations = calculateAllValuations;
+    window.performFullAnalysis = performFullAnalysis;
+    window.updateAutoValuationUI = updateAutoValuationUI;
+    window.updateAutoRiskUI = updateAutoRiskUI;
+    window.calculateAutoRiskMetrics = calculateAutoRiskMetrics;
+}

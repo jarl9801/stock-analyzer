@@ -495,3 +495,11 @@ if (typeof module !== 'undefined' && module.exports) {
         STOCK_DATABASE
     };
 }
+
+// Hacer funciones disponibles globalmente
+if (typeof window !== 'undefined') {
+    window.fetchStockData = fetchStockData;
+    window.fetchHistoricalData = fetchHistoricalData;
+    window.calculateDerivedMetrics = calculateDerivedMetrics;
+    window.STOCK_DATABASE = STOCK_DATABASE;
+}
