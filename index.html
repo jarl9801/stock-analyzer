@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Analyzer Pro - Valoración de Acciones</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">📈</div>
+                <div class="logo-text">
+                    <h1>Stock Analyzer</h1>
+                    <span>Pro</span>
+                </div>
+            </div>
+            
+            <nav class="nav-menu">
+                <div class="nav-item active" data-view="analyzer">
+                    <span class="nav-icon">🔍</span>
+                    <span>Análisis</span>
+                </div>
+                <div class="nav-item" data-view="portfolio">
+                    <span class="nav-icon">💼</span>
+                    <span>Mi Cartera</span>
+                    <span class="badge" id="portfolio-count">0</span>
+                </div>
+                <div class="nav-item" data-view="screener">
+                    <span class="nav-icon">📊</span>
+                    <span>Screener</span>
+                </div>
+                <div class="nav-item" data-view="watchlist">
+                    <span class="nav-icon">⭐</span>
+                    <span>Watchlist</span>
+                </div>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="market-status">
+                    <span class="status-dot"></span>
+                    <span id="market-status-text">Mercado Cerrado</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="search-bar">
+                    <input type="text" id="ticker-search" placeholder="Buscar ticker (ej: AAPL, TSLA, MSFT)...">
+                    <button class="btn-search" onclick="searchStock()">🔍</button>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-secondary" onclick="exportAnalysis()">📥 Exportar</button>
+                    <button class="btn btn-primary" onclick="addToPortfolio()">➕ Agregar a Cartera</button>
+                </div>
+            </header>
+
+            <!-- Views -->
+            <div id="app-views">
+                <!-- VIEW: ANALYZER -->
+                <div class="view active" id="view-analyzer">
+                    <div class="stock-header" id="stock-header">
+                        <div class="stock-info">
+                            <h2 id="stock-name">Busca una acción para comenzar</h2>
+                            <span class="stock-ticker" id="stock-ticker"></span>
+                        </div>
+                        <div class="stock-price" id="stock-price-section" style="display: none;">
+                            <span class="current-price" id="current-price">--</span>
+                            <span class="price-change" id="price-change">--</span>
+                        </div>
+                    </div>
+
+                    <div class="analysis-grid" id="analysis-content" style="display: none;">
+                        <!-- Valuation Summary Card -->
+                        <div class="card card-summary">
+                            <div class="card-header">
+                                <h3>📊 Resumen de Valoración</h3>
+                            </div>
+                            <div class="valuation-result" id="valuation-summary">
+                                <div class="fair-value">
+                                    <span class="label">Valor Intrínseco (Promedio)</span>
+                                    <span class="value" id="fair-value">$--</span>
+                                </div>
+                                <div class="current-vs-fair">
+                                    <div class="comparison">
+                                        <span>Precio Actual: <strong id="summary-current">$--</strong></span>
+                                        <span>Valor Justo: <strong id="summary-fair">$--</strong></span>
+                                    </div>
+                                    <div class="discount-badge" id="discount-badge">
+                                        --% Descuento
+                                    </div>
+                                </div>
+                                <div class="recommendation" id="recommendation">
+                                    Esperando análisis...
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- DCF Valuation -->
+                        <div class="card card-valuation">
+                            <div class="card-header">
+                                <h3>💰 Valoración DCF</h3>
+                                <span class="method-badge">Descuento de Flujos</span>
+                            </div>
+                            <div class="valuation-inputs">
+                                <div class="input-group">
+                                    <label>FCF Actual ($M)</label>
+                                    <input type="number" id="dcf-fcf" placeholder="Free Cash Flow">
+                                </div>
+                                <div class="input-group">
+                                    <label>Crecimiento (5 años) %</label>
+                                    <input type="number" id="dcf-growth" value="15" step="0.5">
+                                </div>
+                                <div class="input-group">
+                                    <label>Crecimiento Terminal %</label>
+                                    <input type="number" id="dcf-terminal" value="3" step="0.5">
+                                </div>
+                                <div class="input-group">
+                                    <label>WACC %</label>
+                                    <input type="number" id="dcf-wacc" value="10" step="0.5">
+                                </div>
+                                <div class="input-group">
+                                    <label>Acciones (M)</label>
+                                    <input type="number" id="dcf-shares" placeholder="Shares Outstanding">
+                                </div>
+                            </div>
+                            <div class="valuation-output">
+                                <div class="output-row">
+                                    <span>Valor por Acción:</span>
+                                    <strong id="dcf-value">$--</strong>
+                                </div>
+                                <div class="output-row">
+                                    <span>Upside/Downside:</span>
+                                    <strong id="dcf-upside" class="neutral">--%</strong>
+                                </div>
+                            </div>
+                            <button class="btn btn-calculate" onclick="calculateDCF()">Calcular DCF</button>
+                        </div>
+
+                        <!-- Dividend Discount Model -->
+                        <div class="card card-valuation">
+                            <div class="card-header">
+                                <h3>💵 Modelo Gordon (DDM)</h3>
+                                <span class="method-badge">Descuento de Dividendos</span>
+                            </div>
+                            <div class="valuation-inputs">
+                                <div class="input-group">
+                                    <label>Dividendo Anual ($)</label>
+                                    <input type="number" id="ddm-dividend" placeholder="Dividendo por acción">
+                                </div>
+                                <div class="input-group">
+                                    <label>Crecimiento Dividendo %</label>
+                                    <input type="number" id="ddm-growth" value="5" step="0.5">
+                                </div>
+                                <div class="input-group">
+                                    <label>Tasa Descuento (CAPM) %</label>
+                                    <input type="number" id="ddm-discount" value="10" step="0.5">
+                                </div>
+                            </div>
+                            <div class="valuation-output">
+                                <div class="output-row">
+                                    <span>Valor por Acción:</span>
+                                    <strong id="ddm-value">$--</strong>
+                                </div>
+                                <div class="output-row">
+                                    <span>Yield al Valor Justo:</span>
+                                    <strong id="ddm-yield">--%</strong>
+                                </div>
+                            </div>
+                            <button class="btn btn-calculate" onclick="calculateDDM()">Calcular DDM</button>
+                        </div>
+
+                        <!-- Multiples Valuation -->
+                        <div class="card card-valuation">
+                            <div class="card-header">
+                                <h3>📈 Múltiplos Comparables</h3>
+                                <span class="method-badge">Análisis de Sector</span>
+                            </div>
+                            <div class="valuation-inputs">
+                                <div class="input-group">
+                                    <label>EPS ($)</label>
+                                    <input type="number" id="mult-eps" placeholder="Earnings Per Share">
+                                </div>
+                                <div class="input-group">
+                                    <label>P/E Sector Promedio</label>
+                                    <input type="number" id="mult-pe" value="20" step="0.5">
+                                </div>
+                                <div class="input-group">
+                                    <label>Book Value por Acción ($)</label>
+                                    <input type="number" id="mult-bv" placeholder="Book Value">
+                                </div>
+                                <div class="input-group">
+                                    <label>P/B Sector Promedio</label>
+                                    <input type="number" id="mult-pb" value="3" step="0.1">
+                                </div>
+                            </div>
+                            <div class="valuation-output">
+                                <div class="output-row">
+                                    <span>Valor por P/E:</span>
+                                    <strong id="mult-pe-value">$--</strong>
+                                </div>
+                                <div class="output-row">
+                                    <span>Valor por P/B:</span>
+                                    <strong id="mult-pb-value">$--</strong>
+                                </div>
+                                <div class="output-row">
+                                    <span>Promedio:</span>
+                                    <strong id="mult-avg-value">$--</strong>
+                                </div>
+                            </div>
+                            <button class="btn btn-calculate" onclick="calculateMultiples()">Calcular Múltiplos</button>
+                        </div>
+
+                        <!-- Risk Analysis -->
+                        <div class="card card-risk">
+                            <div class="card-header">
+                                <h3>⚠️ Análisis de Riesgo</h3>
+                            </div>
+                            <div class="risk-grid">
+                                <div class="risk-item">
+                                    <span class="risk-label">Ratio Sharpe</span>
+                                    <span class="risk-value" id="risk-sharpe">--</span>
+                                    <span class="risk-desc">Rendimiento ajustado por riesgo</span>
+                                </div>
+                                <div class="risk-item">
+                                    <span class="risk-label">Beta (β)</span>
+                                    <span class="risk-value" id="risk-beta">--</span>
+                                    <span class="risk-desc">Sensibilidad al mercado</span>
+                                </div>
+                                <div class="risk-item">
+                                    <span class="risk-label">Volatilidad (σ)</span>
+                                    <span class="risk-value" id="risk-volatility">--%</span>
+                                    <span class="risk-desc">Desviación estándar anual</span>
+                                </div>
+                                <div class="risk-item">
+                                    <span class="risk-label">Margen de Seguridad</span>
+                                    <span class="risk-value" id="risk-margin">--%</span>
+                                    <span class="risk-desc">Descuento vs valor intrínseco</span>
+                                </div>
+                            </div>
+                            
+                            <div class="risk-assessment" id="risk-assessment">
+                                Completa las valoraciones para ver el análisis de riesgo
+                            </div>
+                        </div>
+
+                        <!-- Sensitivity Analysis -->
+                        <div class="card card-sensitivity">
+                            <div class="card-header">
+                                <h3>🎯 Análisis de Sensibilidad</h3>
+                            </div>
+                            <div class="sensitivity-table" id="sensitivity-table">
+                                <p class="placeholder-text">Calcula el DCF primero para ver el análisis de sensibilidad</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW: PORTFOLIO -->
+                <div class="view" id="view-portfolio">
+                    <div class="portfolio-header">
+                        <h2>💼 Mi Cartera</h2>
+                        <div class="portfolio-summary">
+                            <div class="summary-item">
+                                <span class="label">Valor Total</span>
+                                <span class="value" id="portfolio-total">$0.00</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="label">Ganancia/Pérdida</span>
+                                <span class="value" id="portfolio-pnl">$0.00</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="label">Rentabilidad</span>
+                                <span class="value" id="portfolio-return">0.00%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="portfolio-table-container">
+                        <table class="portfolio-table" id="portfolio-table">
+                            <thead>
+                                <tr>
+                                    <th>Ticker</th>
+                                    <th>Nombre</th>
+                                    <th>Posición</th>
+                                    <th>Precio Entrada</th>
+                                    <th>Precio Actual</th>
+                                    <th>Valor</th>
+                                    <th>P&L</th>
+                                    <th>% P&L</th>
+                                    <th>Valor Intrínseco</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="portfolio-tbody">
+                                <tr class="empty-row">
+                                    <td colspan="10">Tu cartera está vacía. Agrega acciones desde el análisis.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="portfolio-allocation" id="portfolio-allocation">
+                        <h3>Asignación por Sector</h3>
+                        <div class="allocation-chart" id="allocation-chart">
+                            <p class="placeholder-text">Agrega posiciones para ver la asignación</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW: SCREENER -->
+                <div class="view" id="view-screener">
+                    <div class="screener-filters">
+                        <h2>📊 Stock Screener</h2>
+                        <div class="filters-grid">
+                            <div class="filter-group">
+                                <label>Mercado</label>
+                                <select id="filter-market">
+                                    <option value="all">Todos</option>
+                                    <option value="us">Estados Unidos</option>
+                                    <option value="eu">Europa</option>
+                                    <option value="latam">Latinoamérica</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>Sector</label>
+                                <select id="filter-sector">
+                                    <option value="all">Todos</option>
+                                    <option value="tech">Tecnología</option>
+                                    <option value="finance">Finanzas</option>
+                                    <option value="health">Salud</option>
+                                    <option value="energy">Energía</option>
+                                    <option value="consumer">Consumo</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>P/E Máximo</label>
+                                <input type="number" id="filter-pe" placeholder="Ej: 25">
+                            </div>
+                            <div class="filter-group">
+                                <label>Dividendo Mínimo %</label>
+                                <input type="number" id="filter-dividend" placeholder="Ej: 2">
+                            </div>
+                            <div class="filter-group">
+                                <label>Descuento DCF Mínimo %</label>
+                                <input type="number" id="filter-discount" placeholder="Ej: 20">
+                            </div>
+                        </div>
+                        
+                        <button class="btn btn-primary" onclick="runScreener()">🔍 Ejecutar Screener</button>
+                    </div>
+                    
+                    <div class="screener-results" id="screener-results">
+                        <p class="placeholder-text">Configura los filtros y ejecuta el screener</p>
+                    </div>
+                </div>
+
+                <!-- VIEW: WATCHLIST -->
+                <div class="view" id="view-watchlist">
+                    <div class="watchlist-header">
+                        <h2>⭐ Watchlist</h2>
+                        <div class="search-bar small">
+                            <input type="text" id="watchlist-add" placeholder="Agregar ticker...">
+                            <button onclick="addToWatchlist()">➕</button>
+                        </div>
+                    </div>
+                    
+                    <div class="watchlist-grid" id="watchlist-grid">
+                        <div class="empty-state">
+                            <span class="icon">⭐</span>
+                            <p>Tu watchlist está vacía</p>
+                            <span>Agrega tickers para seguirlos</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/valuation.js"></script>
+    <script src="js/risk-analysis.js"></script>
+    <script src="js/portfolio.js"></script>
+    <script src="js/data-fetcher.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
