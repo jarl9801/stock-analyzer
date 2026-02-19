@@ -2,8 +2,7 @@
 // VALUATION.JS - Métodos de Valoración
 // ============================================
 
-// Variables globales
-let currentStock = null;
+// Variables globales - currentStock se define en app.js
 let valuations = {
     dcf: null,
     ddm: null,
