@@ -11,16 +11,35 @@ let valuations = {
 };
 
 // ============================================
+// Helper functions
+// ============================================
+function formatCurrency(value) {
+    if (value === null || value === undefined || isNaN(value)) return '$--';
+    return '$' + value.toFixed(2);
+}
+
+function formatPercent(value) {
+    if (value === null || value === undefined || isNaN(value)) return '--%';
+    return (value >= 0 ? '+' : '') + value.toFixed(1) + '%';
+}
+
+// ============================================
 // DCF - Discounted Cash Flow
 // ============================================
 function calculateDCF() {
-    const fcf = parseFloat(document.getElementById('dcf-fcf').value);
-    const growthRate = parseFloat(document.getElementById('dcf-growth').value) / 100;
-    const terminalGrowth = parseFloat(document.getElementById('dcf-terminal').value) / 100;
-    const wacc = parseFloat(document.getElementById('dcf-wacc').value) / 100;
-    const shares = parseFloat(document.getElementById('dcf-shares').value);
+    const fcfInput = document.getElementById('dcf-fcf').value;
+    const growthInput = document.getElementById('dcf-growth').value;
+    const terminalInput = document.getElementById('dcf-terminal').value;
+    const waccInput = document.getElementById('dcf-wacc').value;
+    const sharesInput = document.getElementById('dcf-shares').value;
     
-    if (!fcf || !shares) {
+    const fcf = parseFloat(fcfInput);
+    const growthRate = parseFloat(growthInput) / 100;
+    const terminalGrowth = parseFloat(terminalInput) / 100;
+    const wacc = parseFloat(waccInput) / 100;
+    const shares = parseFloat(sharesInput);
+    
+    if (!fcf || !shares || isNaN(fcf) || isNaN(shares)) {
         alert('Por favor completa FCF y número de acciones');
         return;
     }
@@ -79,7 +98,9 @@ function calculateDCF() {
     updateValuationSummary();
     
     // Actualizar análisis de riesgo
-    updateRiskAnalysis();
+    if (typeof updateRiskAnalysis === 'function') {
+        updateRiskAnalysis();
+    }
 }
 
 // ============================================
@@ -340,39 +361,56 @@ async function searchStock() {
         return;
     }
     
-    // Simular carga de datos (en producción, esto llamaría a una API)
-    // Por ahora usamos datos de ejemplo
-    
-    currentStock = {
-        ticker: ticker,
-        name: getCompanyName(ticker),
-        price: getRandomPrice(50, 500),
-        change: getRandomChange(),
-        sector: getSector(ticker)
-    };
-    
-    // Actualizar UI
-    document.getElementById('stock-name').textContent = currentStock.name;
-    document.getElementById('stock-ticker').textContent = `${currentStock.ticker} • ${currentStock.sector}`;
-    
-    const priceSection = document.getElementById('stock-price-section');
-    priceSection.style.display = 'block';
-    
-    document.getElementById('current-price').textContent = `$${currentStock.price.toFixed(2)}`;
-    
-    const changeEl = document.getElementById('price-change');
-    const changePercent = (currentStock.change / currentStock.price) * 100;
-    changeEl.textContent = `${currentStock.change >= 0 ? '+' : ''}${currentStock.change.toFixed(2)} (${changePercent.toFixed(2)}%)`;
-    changeEl.className = `price-change ${currentStock.change >= 0 ? 'positive' : 'negative'}`;
-    
-    // Mostrar contenido de análisis
-    document.getElementById('analysis-content').style.display = 'grid';
-    
-    // Resetear valoraciones
-    valuations = { dcf: null, ddm: null, multiples: null };
-    
-    // Actualizar resumen
-    updateValuationSummary();
+    // Obtener datos reales desde la base de datos
+    try {
+        const stockData = await fetchStockData(ticker);
+        
+        if (!stockData) {
+            alert(`No se encontraron datos para ${ticker}`);
+            return;
+        }
+        
+        // Guardar stock actual
+        currentStock = {
+            ticker: ticker,
+            name: stockData.name,
+            price: stockData.price,
+            change: stockData.change,
+            changePercent: stockData.changePercent,
+            sector: stockData.sector,
+            ...stockData
+        };
+        
+        // Actualizar UI del header
+        document.getElementById('stock-name').textContent = currentStock.name;
+        document.getElementById('stock-ticker').textContent = `${currentStock.ticker} • ${currentStock.sector}`;
+        
+        const priceSection = document.getElementById('stock-price-section');
+        priceSection.style.display = 'block';
+        
+        document.getElementById('current-price').textContent = `$${currentStock.price.toFixed(2)}`;
+        
+        const changeEl = document.getElementById('price-change');
+        const changePercent = currentStock.changePercent || ((currentStock.change / currentStock.price) * 100);
+        changeEl.textContent = `${currentStock.change >= 0 ? '+' : ''}${currentStock.change.toFixed(2)} (${changePercent.toFixed(2)}%)`;
+        changeEl.className = `price-change ${currentStock.change >= 0 ? 'positive' : 'negative'}`;
+        
+        // Mostrar contenido de análisis
+        document.getElementById('analysis-content').style.display = 'grid';
+        
+        // Resetear valoraciones
+        valuations = { dcf: null, ddm: null, multiples: null };
+        
+        // AUTOCOMPLETAR TODOS LOS CAMPOS CON DATOS REALES
+        await performFullAnalysis(stockData);
+        
+        // Actualizar resumen
+        updateValuationSummary();
+        
+    } catch (error) {
+        console.error('Error fetching stock data:', error);
+        alert(`Error al obtener datos para ${ticker}`);
+    }
 }
 
 // Helper functions

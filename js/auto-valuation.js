@@ -272,19 +272,44 @@ function calculateAllValuations(data) {
 // Actualizar UI con valoraciones automáticas
 // ============================================
 function updateAutoValuationUI(valuations, data) {
+    console.log('[AutoValuation] Updating UI with valuations:', valuations);
+    
+    // Helper para setear valor de input de forma segura
+    const setInputValue = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.value = value;
+            console.log(`[AutoValuation] Set ${id} = ${value}`);
+        } else {
+            console.warn(`[AutoValuation] Element ${id} not found`);
+        }
+    };
+    
+    // Helper para setear texto de forma segura
+    const setTextContent = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.textContent = value;
+        } else {
+            console.warn(`[AutoValuation] Element ${id} not found`);
+        }
+    };
+    
     // Actualizar campos DCF
     if (valuations.dcf) {
-        document.getElementById('dcf-fcf').value = (data.fcf / 1000000).toFixed(0);
-        document.getElementById('dcf-growth').value = (valuations.dcf.growthRate * 100).toFixed(1);
-        document.getElementById('dcf-terminal').value = (valuations.dcf.terminalGrowth * 100).toFixed(1);
-        document.getElementById('dcf-wacc').value = (valuations.dcf.wacc * 100).toFixed(1);
-        document.getElementById('dcf-shares').value = (data.shares / 1000000).toFixed(0);
+        setInputValue('dcf-fcf', (data.fcf / 1000000).toFixed(0));
+        setInputValue('dcf-growth', (valuations.dcf.growthRate * 100).toFixed(1));
+        setInputValue('dcf-terminal', (valuations.dcf.terminalGrowth * 100).toFixed(1));
+        setInputValue('dcf-wacc', (valuations.dcf.wacc * 100).toFixed(1));
+        setInputValue('dcf-shares', (data.shares / 1000000).toFixed(0));
         
-        document.getElementById('dcf-value').textContent = formatCurrency(valuations.dcf.valuePerShare);
+        setTextContent('dcf-value', formatCurrency(valuations.dcf.valuePerShare));
         
         const dcfUpsideEl = document.getElementById('dcf-upside');
-        dcfUpsideEl.textContent = formatPercent(valuations.dcf.upside);
-        dcfUpsideEl.className = `output-row strong ${valuations.dcf.upside >= 0 ? 'positive' : 'negative'}`;
+        if (dcfUpsideEl) {
+            dcfUpsideEl.textContent = formatPercent(valuations.dcf.upside);
+            dcfUpsideEl.className = valuations.dcf.upside >= 0 ? 'positive' : 'negative';
+        }
         
         // Actualizar tabla de sensibilidad
         updateSensitivityTable(valuations.dcf, data);
@@ -292,24 +317,24 @@ function updateAutoValuationUI(valuations, data) {
     
     // Actualizar campos DDM
     if (valuations.ddm) {
-        document.getElementById('ddm-dividend').value = data.dividend.toFixed(2);
-        document.getElementById('ddm-growth').value = (valuations.ddm.growthRate * 100).toFixed(1);
-        document.getElementById('ddm-discount').value = (valuations.ddm.discountRate * 100).toFixed(1);
+        setInputValue('ddm-dividend', data.dividend.toFixed(2));
+        setInputValue('ddm-growth', (valuations.ddm.growthRate * 100).toFixed(1));
+        setInputValue('ddm-discount', (valuations.ddm.discountRate * 100).toFixed(1));
         
-        document.getElementById('ddm-value').textContent = formatCurrency(valuations.ddm.valuePerShare);
-        document.getElementById('ddm-yield').textContent = valuations.ddm.yieldAtFairValue.toFixed(2) + '%';
+        setTextContent('ddm-value', formatCurrency(valuations.ddm.valuePerShare));
+        setTextContent('ddm-yield', valuations.ddm.yieldAtFairValue.toFixed(2) + '%');
     }
     
     // Actualizar campos Múltiplos
     if (valuations.multiples) {
-        document.getElementById('mult-eps').value = data.eps.toFixed(2);
-        document.getElementById('mult-pe').value = valuations.multiples.peUsed.toFixed(1);
-        document.getElementById('mult-bv').value = data.bookValue.toFixed(2);
-        document.getElementById('mult-pb').value = valuations.multiples.pbUsed.toFixed(1);
+        setInputValue('mult-eps', data.eps.toFixed(2));
+        setInputValue('mult-pe', valuations.multiples.peUsed.toFixed(1));
+        setInputValue('mult-bv', data.bookValue.toFixed(2));
+        setInputValue('mult-pb', valuations.multiples.pbUsed.toFixed(1));
         
-        document.getElementById('mult-pe-value').textContent = formatCurrency(valuations.multiples.valuePE);
-        document.getElementById('mult-pb-value').textContent = formatCurrency(valuations.multiples.valuePB);
-        document.getElementById('mult-avg-value').textContent = formatCurrency(valuations.multiples.valueAvg);
+        setTextContent('mult-pe-value', formatCurrency(valuations.multiples.valuePE));
+        setTextContent('mult-pb-value', formatCurrency(valuations.multiples.valuePB));
+        setTextContent('mult-avg-value', formatCurrency(valuations.multiples.valueAvg));
     }
     
     // Actualizar resumen
