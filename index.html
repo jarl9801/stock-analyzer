@@ -382,42 +382,11 @@
 
     <!-- Scripts -->
     <script src="js/data-fetcher.js"></script>
-    <script src="js/stock-api.js"></script>
-    <script src="js/yahoo-proxy.js"></script>
+    <script src="js/advanced-valuation.js"></script>
     <script src="js/auto-valuation.js"></script>
     <script src="js/valuation.js"></script>
     <script src="js/risk-analysis.js"></script>
     <script src="js/portfolio.js"></script>
     <script src="js/app.js"></script>
-    <script>
-        // Sobrescribir fetchStockData para usar APIs reales primero
-        const originalFetchStockData = fetchStockData;
-        fetchStockData = async function(ticker) {
-            // 1. Intentar APIs reales
-            const realTimeData = await fetchRealTimeData(ticker);
-            if (realTimeData && realTimeData.price > 0) {
-                // Combinar con datos fundamentales de la base local si existen
-                const localData = STOCK_DATABASE[ticker.toUpperCase()];
-                if (localData) {
-                    return {
-                        ...localData,
-                        price: realTimeData.price,
-                        change: realTimeData.change,
-                        changePercent: realTimeData.changePercent,
-                        lastUpdated: realTimeData.lastUpdated,
-                        source: 'realtime+' + realTimeData.source
-                    };
-                }
-                return realTimeData;
-            }
-            
-            // 2. Intentar Yahoo via proxy
-            const yahooData = await fetchStockDataWithYahoo(ticker);
-            if (yahooData) return yahooData;
-            
-            // 3. Fallback local
-            return originalFetchStockData(ticker);
-        };
-    </script>
 </body>
 </html>

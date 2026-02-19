@@ -113,13 +113,17 @@ async function searchStock() {
         document.getElementById('analysis-content').style.display = 'grid';
         
         // Realizar análisis completo automáticamente
-        showNotification('Calculando valoraciones...', 'info');
-        console.log('[App] Starting full analysis...');
+        showNotification('Calculando valoraciones avanzadas...', 'info');
+        console.log('[App] Starting advanced analysis...');
         
-        const analysis = await performFullAnalysis(data);
-        console.log('[App] Analysis completed:', analysis);
+        // Usar nuevos modelos de valoración
+        const analysis = calculateAllAdvancedValuations(data);
+        console.log('[App] Advanced analysis completed:', analysis);
         
-        showNotification(`${data.name} analizado completamente`, 'success');
+        // Actualizar UI con resultados
+        updateAdvancedValuationUI(analysis, data);
+        
+        showNotification(`${data.name} analizado con modelos avanzados`, 'success');
         
     } catch (error) {
         console.error('[App] Error:', error);
@@ -152,7 +156,108 @@ function updateStockUI(data) {
 }
 
 // ============================================
-// Auto-llenar campos de valoración
+// Actualizar UI con valoraciones avanzadas
+// ============================================
+function updateAdvancedValuationUI(valuations, data) {
+    console.log('[App] Updating UI with advanced valuations:', valuations);
+    
+    // Helper para setear valores de forma segura
+    const setValue = (id, value, suffix = '') => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value !== null && value !== undefined ? value + suffix : '--';
+    };
+    
+    const setInputValue = (id, value) => {
+        const el = document.getElementById(id);
+        if (el && value !== null && value !== undefined) el.value = value;
+    };
+    
+    // 1. DCF MEJORADO
+    if (valuations.dcf) {
+        setInputValue('dcf-fcf', valuations.dcf.projectedFCF ? valuations.dcf.projectedFCF[0].toFixed(0) : (data.fcf / 1000000).toFixed(0));
+        setInputValue('dcf-growth', (valuations.dcf.growthRate * 100).toFixed(1));
+        setInputValue('dcf-wacc', (valuations.dcf.wacc * 100).toFixed(1));
+        setInputValue('dcf-shares', (data.shares / 1000000).toFixed(0));
+        setValue('dcf-value', '$' + valuations.dcf.valuePerShare.toFixed(2));
+        setValue('dcf-upside', valuations.dcf.upside.toFixed(1), '%');
+    }
+    
+    // 2. RESIDUAL INCOME MODEL
+    if (valuations.rim) {
+        setValue('rim-value', '$' + valuations.rim.valuePerShare.toFixed(2));
+        setValue('rim-book', '$' + valuations.rim.bookValue.toFixed(2));
+        setValue('rim-residual', '$' + valuations.rim.residualIncome.toFixed(2));
+        setValue('rim-cost', (valuations.rim.costOfEquity * 100).toFixed(1), '%');
+        setValue('rim-upside', valuations.rim.upside.toFixed(1), '%');
+    }
+    
+    // 3. AEG (Abnormal Earnings Growth)
+    if (valuations.aeg) {
+        setValue('aeg-value', '$' + valuations.aeg.valuePerShare.toFixed(2));
+        setValue('aeg-roe', (valuations.aeg.roe * 100).toFixed(1), '%');
+        setValue('aeg-growth', '$' + valuations.aeg.abnormalGrowth.toFixed(2));
+        setValue('aeg-upside', valuations.aeg.upside.toFixed(1), '%');
+    }
+    
+    // 4. EVA
+    if (valuations.eva) {
+        setValue('eva-value', '$' + valuations.eva.valuePerShare.toFixed(2));
+        setValue('eva-nopat', (valuations.eva.nopat / 1e9).toFixed(2), 'B');
+        setValue('eva-wacc', (valuations.eva.wacc * 100).toFixed(1), '%');
+        setValue('eva-amount', (valuations.eva.eva / 1e9).toFixed(2), 'B');
+        setValue('eva-upside', valuations.eva.upside.toFixed(1), '%');
+    }
+    
+    // 5. MÚLTIPLOS AJUSTADOS
+    if (valuations.multiples) {
+        setInputValue('mult-eps', data.eps.toFixed(2));
+        setInputValue('mult-pe', valuations.multiples.peUsed.toFixed(1));
+        setInputValue('mult-bv', data.bookValue.toFixed(2));
+        setInputValue('mult-pb', valuations.multiples.pbUsed.toFixed(1));
+        setValue('mult-pe-value', '$' + valuations.multiples.valuePE.toFixed(2));
+        setValue('mult-pb-value', '$' + valuations.multiples.valuePB.toFixed(2));
+        setValue('mult-avg-value', '$' + valuations.multiples.valueAvg.toFixed(2));
+    }
+    
+    // RESUMEN FINAL
+    if (valuations.fairValue) {
+        setValue('fair-value', '$' + valuations.fairValue.toFixed(2));
+        setValue('summary-current', '$' + data.price.toFixed(2));
+        setValue('summary-fair', '$' + valuations.fairValue.toFixed(2));
+        
+        const upside = valuations.upside;
+        const discountBadge = document.getElementById('discount-badge');
+        if (discountBadge) {
+            if (upside >= 0) {
+                discountBadge.textContent = upside.toFixed(1) + '% Descuento';
+                discountBadge.className = 'discount-badge';
+            } else {
+                discountBadge.textContent = Math.abs(upside).toFixed(1) + '% Sobrevalorada';
+                discountBadge.className = 'discount-badge overvalued';
+            }
+        }
+        
+        // Recomendación
+        const recEl = document.getElementById('recommendation');
+        if (recEl) {
+            let rec = '';
+            let recClass = '';
+            if (upside >= 25) { rec = '✅ COMPRAR FUERTE'; recClass = 'buy'; }
+            else if (upside >= 15) { rec = '✅ COMPRAR'; recClass = 'buy'; }
+            else if (upside >= 5) { rec = '🟡 COMPRAR CON CAUTELA'; recClass = 'hold'; }
+            else if (upside > -10) { rec = '⏳ MANTENER'; recClass = 'hold'; }
+            else { rec = '❌ VENDER'; recClass = 'sell'; }
+            recEl.textContent = rec;
+            recEl.className = 'recommendation ' + recClass;
+        }
+    }
+    
+    // Autollenar campos legacy para compatibilidad
+    autoFillValuationFields(data);
+}
+
+// ============================================
+// Auto-llenar campos de valoración (legacy)
 // ============================================
 function autoFillValuationFields(data) {
     // DCF Fields
