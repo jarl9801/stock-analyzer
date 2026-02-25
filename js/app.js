@@ -116,6 +116,16 @@ async function searchStock() {
         showNotification('Calculando valoraciones avanzadas...', 'info');
         console.log('[App] Starting advanced analysis...');
         
+        // FCF Deep Dive Analysis
+        if (typeof performFCFAnalysis === 'function') {
+            const fcfAnalysis = performFCFAnalysis(data);
+            console.log('[App] FCF analysis completed:', fcfAnalysis);
+            renderFCFSection(fcfAnalysis, data);
+            updateStockHeaderFCF(fcfAnalysis);
+            // Store for weighted valuation
+            window._lastFCFAnalysis = fcfAnalysis;
+        }
+        
         // Usar nuevos modelos de valoración
         const analysis = calculateAllAdvancedValuations(data);
         console.log('[App] Advanced analysis completed:', analysis);

@@ -361,34 +361,40 @@ function calculateAllAdvancedValuations(data) {
     let weightedSum = 0;
     let totalWeight = 0;
     
-    // RIM es generalmente más preciso (30%)
+    // FCF-based DCF gets highest weight (60%) — centerpiece of valuation
+    // If FCF analysis ran, blend its base scenario at 60%
+    const fcfA = typeof window !== 'undefined' && window._lastFCFAnalysis;
+    if (fcfA && fcfA.valuations && fcfA.valuations.dcfScenarios && fcfA.valuations.dcfScenarios.base.valuePerShare > 0) {
+        weightedSum += fcfA.valuations.dcfScenarios.base.valuePerShare * 0.60;
+        totalWeight += 0.60;
+    } else if (valuations.dcf && valuations.dcf.valuePerShare > 0) {
+        // Fallback to enhanced DCF at 60%
+        weightedSum += valuations.dcf.valuePerShare * 0.60;
+        totalWeight += 0.60;
+    }
+    
+    // RIM (15%)
     if (valuations.rim && valuations.rim.valuePerShare > 0) {
-        weightedSum += valuations.rim.valuePerShare * 0.30;
-        totalWeight += 0.30;
-    }
-    
-    // DCF mejorado (25%)
-    if (valuations.dcf && valuations.dcf.valuePerShare > 0) {
-        weightedSum += valuations.dcf.valuePerShare * 0.25;
-        totalWeight += 0.25;
-    }
-    
-    // Múltiplos ajustados (20%)
-    if (valuations.multiples && valuations.multiples.valueAvg > 0) {
-        weightedSum += valuations.multiples.valueAvg * 0.20;
-        totalWeight += 0.20;
-    }
-    
-    // AEG (15%)
-    if (valuations.aeg && valuations.aeg.valuePerShare > 0) {
-        weightedSum += valuations.aeg.valuePerShare * 0.15;
+        weightedSum += valuations.rim.valuePerShare * 0.15;
         totalWeight += 0.15;
     }
     
-    // EVA (10%)
+    // Múltiplos ajustados (12%)
+    if (valuations.multiples && valuations.multiples.valueAvg > 0) {
+        weightedSum += valuations.multiples.valueAvg * 0.12;
+        totalWeight += 0.12;
+    }
+    
+    // AEG (8%)
+    if (valuations.aeg && valuations.aeg.valuePerShare > 0) {
+        weightedSum += valuations.aeg.valuePerShare * 0.08;
+        totalWeight += 0.08;
+    }
+    
+    // EVA (5%)
     if (valuations.eva && valuations.eva.valuePerShare > 0) {
-        weightedSum += valuations.eva.valuePerShare * 0.10;
-        totalWeight += 0.10;
+        weightedSum += valuations.eva.valuePerShare * 0.05;
+        totalWeight += 0.05;
     }
     
     const fairValue = totalWeight > 0 ? weightedSum / totalWeight : null;

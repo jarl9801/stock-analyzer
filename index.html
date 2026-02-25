@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stock Analyzer Pro - Valoración de Acciones</title>
     <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -75,6 +76,9 @@
                             <span class="price-change" id="price-change">--</span>
                         </div>
                     </div>
+
+                    <!-- FCF Deep Dive Section -->
+                    <div id="fcf-analysis-section" class="fcf-analysis-section" style="display: none;"></div>
 
                     <div class="analysis-grid" id="analysis-content" style="display: none;">
                         <!-- Valuation Summary Card -->
@@ -382,6 +386,7 @@
 
     <!-- Scripts -->
     <script src="js/data-fetcher.js"></script>
+    <script src="js/fcf-analysis.js"></script>
     <script src="js/advanced-valuation.js"></script>
     <script src="js/auto-valuation.js"></script>
     <script src="js/valuation.js"></script>

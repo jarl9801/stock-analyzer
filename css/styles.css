@@ -1215,6 +1215,207 @@ body {
     }
 }
 
+/* ============================================
+   FCF ANALYSIS SECTION
+   ============================================ */
+
+.fcf-analysis-section {
+    margin-bottom: 28px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 24px;
+}
+
+/* Verdict Card — full width */
+.fcf-verdict-card {
+    grid-column: 1 / -1;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 28px 32px;
+    box-shadow: var(--shadow-md);
+}
+.fcf-verdict-card.fcf-verdict-strong { border-color: rgba(0,208,132,0.4); }
+.fcf-verdict-card.fcf-verdict-caution { border-color: rgba(243,156,18,0.4); }
+.fcf-verdict-card.fcf-verdict-weak { border-color: rgba(255,71,87,0.4); }
+
+.fcf-verdict-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.fcf-verdict-badge {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+.fcf-verdict-strong .fcf-verdict-badge { color: var(--accent-green); }
+.fcf-verdict-caution .fcf-verdict-badge { color: var(--accent-yellow); }
+.fcf-verdict-weak .fcf-verdict-badge { color: var(--accent-red); }
+
+.fcf-quality-ring { width: 100px; height: 100px; }
+.quality-svg { width: 100%; height: 100%; }
+
+.fcf-verdict-explanation {
+    color: var(--text-secondary);
+    font-size: 15px;
+    margin-bottom: 20px;
+    line-height: 1.6;
+}
+
+.fcf-fair-range {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    flex-wrap: wrap;
+}
+.range-label { color: var(--text-secondary); font-size: 14px; font-weight: 500; }
+.range-values { font-family: var(--font-mono); font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.range-bear { color: var(--accent-red); }
+.range-base { color: var(--accent-blue); }
+.range-bull { color: var(--accent-green); }
+.range-sep { color: var(--text-muted); font-weight: 400; }
+
+/* Quality Card */
+.fcf-quality-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 24px;
+}
+
+.fcf-quality-bars { display: flex; flex-direction: column; gap: 18px; }
+
+.quality-bar-row { display: flex; flex-direction: column; gap: 6px; }
+.quality-bar-label { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-primary); font-weight: 500; }
+.quality-bar-pts { color: var(--text-muted); }
+.quality-bar-track { height: 8px; background: var(--bg-tertiary); border-radius: 4px; overflow: hidden; }
+.quality-bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
+.quality-bar-desc { font-size: 12px; color: var(--text-muted); }
+
+/* Chart Card */
+.fcf-chart-card {
+    grid-column: 1 / -1;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 24px;
+}
+.fcf-chart-container { position: relative; height: 280px; }
+.fcf-chart-container canvas { width: 100% !important; }
+
+/* Fallback chart */
+.fcf-chart-fallback { display: flex; align-items: flex-end; gap: 12px; height: 200px; padding: 0 20px; }
+.fcf-bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.fcf-bar { width: 100%; max-width: 40px; border-radius: 4px 4px 0 0; transition: height 0.5s; }
+.fcf-bar-label { font-size: 11px; color: var(--text-muted); margin-top: 8px; font-family: var(--font-mono); }
+
+/* Valuation Models Card */
+.fcf-valuations-card {
+    grid-column: 1 / -1;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 24px;
+}
+
+.fcf-models-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+}
+
+.fcf-model-item {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    text-align: center;
+}
+.fcf-model-label { font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+.fcf-model-value { font-size: 28px; font-weight: 700; font-family: var(--font-mono); margin-bottom: 4px; }
+.fcf-model-sub { font-size: 12px; color: var(--text-muted); }
+
+/* DCF Scenarios */
+.fcf-scenarios h4 { font-size: 15px; color: var(--text-secondary); margin-bottom: 16px; font-weight: 600; }
+.fcf-scenarios-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+.fcf-scenario-item {
+    background: var(--bg-tertiary);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    text-align: center;
+}
+.scenario-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.scenario-value { font-size: 24px; font-weight: 700; font-family: var(--font-mono); color: var(--text-primary); margin-bottom: 8px; }
+.scenario-details { font-size: 11px; color: var(--text-muted); display: flex; justify-content: center; gap: 12px; margin-bottom: 6px; }
+.scenario-upside { font-size: 16px; font-weight: 700; font-family: var(--font-mono); }
+
+/* Red Flags Card */
+.fcf-flags-card {
+    grid-column: 1 / -1;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 24px;
+}
+
+.fcf-flags-list { display: flex; flex-direction: column; gap: 10px; }
+
+.fcf-flag-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+}
+.fcf-flag-item.fcf-flag-high { background: var(--accent-red-dim); color: var(--accent-red); border: 1px solid rgba(255,71,87,0.2); }
+.fcf-flag-item.fcf-flag-medium { background: rgba(243,156,18,0.1); color: var(--accent-yellow); border: 1px solid rgba(243,156,18,0.2); }
+.fcf-flag-item.fcf-flag-ok { background: var(--accent-green-dim); color: var(--accent-green); border: 1px solid rgba(0,208,132,0.2); }
+.flag-icon { font-size: 18px; }
+
+/* FCF Badge in header */
+.fcf-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    margin-left: 12px;
+    vertical-align: middle;
+}
+.fcf-badge-strong { background: var(--accent-green-dim); color: var(--accent-green); }
+.fcf-badge-caution { background: rgba(243,156,18,0.12); color: var(--accent-yellow); }
+.fcf-badge-weak { background: var(--accent-red-dim); color: var(--accent-red); }
+
+/* FCF Yield in header */
+.fcf-yield-header {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    text-align: right;
+}
+.fcf-yield-header strong { font-family: var(--font-mono); font-size: 16px; }
+
+/* Responsive */
+@media (max-width: 768px) {
+    .fcf-analysis-section { grid-template-columns: 1fr; }
+    .fcf-scenarios-grid { grid-template-columns: 1fr; }
+    .fcf-models-grid { grid-template-columns: repeat(2, 1fr); }
+    .fcf-verdict-header { flex-direction: column; gap: 16px; text-align: center; }
+    .fcf-fair-range { flex-direction: column; text-align: center; }
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
     width: 8px;
