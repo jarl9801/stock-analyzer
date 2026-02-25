@@ -454,30 +454,30 @@ function showLoading(show) {
 // ============================================
 // Notificaciones
 // ============================================
+let _notifContainer = null;
 function showNotification(message, type = 'info') {
-    // Crear elemento de notificación
+    // Reuse single notification element — no stacking
+    if (!_notifContainer) {
+        _notifContainer = document.createElement('div');
+        _notifContainer.id = 'app-notif';
+        _notifContainer.style.cssText = 'position:fixed;top:20px;right:20px;z-index:1000;display:flex;flex-direction:column;gap:6px;pointer-events:none;';
+        document.body.appendChild(_notifContainer);
+    }
+    // Remove previous if same type (avoid stacking info→info)
+    const prev = _notifContainer.querySelector(`.notif-${type}`);
+    if (prev) prev.remove();
+
     const notif = document.createElement('div');
-    notif.style.cssText = `
-        position: fixed;
-        top: 24px;
-        right: 24px;
-        padding: 16px 24px;
-        border-radius: 12px;
-        font-weight: 500;
-        z-index: 1000;
-        animation: slideIn 0.3s ease;
-        ${type === 'success' ? 'background: rgba(0,255,0,0.1); color: #00FF00; border: 1px solid rgba(0, 208, 132, 0.3);' : 
-          type === 'error' ? 'background: rgba(255,51,51,0.1); color: #FF3333; border: 1px solid rgba(255, 71, 87, 0.3);' :
-          'background: var(--bg-card); color: #FFFFFF; border: 1px solid var(--border);'}
-    `;
+    notif.className = `notif-${type}`;
+    const colors = {
+        success: 'background:rgba(0,255,0,0.12);color:#00FF00;border:1px solid rgba(0,255,0,0.3);',
+        error:   'background:rgba(255,51,51,0.12);color:#FF3333;border:1px solid rgba(255,51,51,0.3);',
+        info:    'background:rgba(255,140,0,0.12);color:#FF8C00;border:1px solid rgba(255,140,0,0.3);'
+    };
+    notif.style.cssText = `padding:10px 18px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:12px;pointer-events:auto;${colors[type]||colors.info}`;
     notif.textContent = message;
-    
-    document.body.appendChild(notif);
-    
-    setTimeout(() => {
-        notif.style.animation = 'slideOut 0.3s ease';
-        setTimeout(() => notif.remove(), 300);
-    }, 3000);
+    _notifContainer.appendChild(notif);
+    setTimeout(() => { notif.style.opacity = '0'; notif.style.transition = 'opacity 0.3s'; setTimeout(() => notif.remove(), 300); }, 3000);
 }
 
 // ============================================
