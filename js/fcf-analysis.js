@@ -465,13 +465,13 @@ function renderFCFSection(analysis, data) {
             <div class="fcf-verdict-header">
                 <div class="fcf-verdict-badge">${verdict.verdict}</div>
                 <div class="fcf-quality-ring">
-                    <svg viewBox="0 0 120 120" class="quality-svg">
-                        <circle cx="60" cy="60" r="52" stroke="var(--border)" stroke-width="8" fill="none"/>
-                        <circle cx="60" cy="60" r="52" stroke="${scoreColor}" stroke-width="8" fill="none"
+                    <svg viewBox="0 0 120 120" class="quality-svg" style="width:120px;height:120px">
+                        <circle cx="60" cy="60" r="52" stroke="#222222" stroke-width="10" fill="none"/>
+                        <circle cx="60" cy="60" r="52" stroke="${scoreColor}" stroke-width="10" fill="none"
                             stroke-dasharray="${quality.score * 3.27} 327" stroke-dashoffset="0"
-                            transform="rotate(-90 60 60)" stroke-linecap="round"/>
-                        <text x="60" y="55" text-anchor="middle" fill="#FFFFFF" font-size="28" font-weight="700" font-family="'JetBrains Mono',monospace">${quality.score}</text>
-                        <text x="60" y="75" text-anchor="middle" fill="#888888" font-size="11" font-family="'JetBrains Mono',monospace">CALIDAD</text>
+                            transform="rotate(-90 60 60)" stroke-linecap="round" filter="drop-shadow(0 0 6px ${scoreColor})"/>
+                        <text x="60" y="52" text-anchor="middle" dominant-baseline="middle" fill="#FFFFFF" font-size="32" font-weight="700" font-family="'JetBrains Mono',monospace">${quality.score}</text>
+                        <text x="60" y="80" text-anchor="middle" fill="#AAAAAA" font-size="11" font-family="'JetBrains Mono',monospace">CALIDAD</text>
                     </svg>
                 </div>
             </div>
