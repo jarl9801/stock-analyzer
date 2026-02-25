@@ -800,8 +800,8 @@ body {
 .fcf-verdict-weak .fcf-verdict-badge { color: var(--red); }
 
 .fcf-quality-ring {
-    width: 80px;
-    height: 80px;
+    width: 100px;
+    height: 100px;
     flex-shrink: 0;
 }
 

@@ -449,11 +449,11 @@ function updateSensitivityTable(dcf, data) {
             const upside = data.price ? ((valuePerShare - data.price) / data.price) * 100 : 0;
             
             let colorStyle = '';
-            if (upside >= 30) colorStyle = 'color: var(--accent-green); font-weight: 700;';
+            if (upside >= 30) colorStyle = 'color: #00FF00; font-weight: 700;';
             else if (upside >= 15) colorStyle = 'color: #90EE90;';
-            else if (upside >= 0) colorStyle = 'color: var(--accent-yellow);';
+            else if (upside >= 0) colorStyle = 'color: #FFD700;';
             else if (upside > -15) colorStyle = 'color: #FFB6C1;';
-            else colorStyle = 'color: var(--accent-red);';
+            else colorStyle = 'color: #FF3333;';
             
             tableHTML += `<td style="${colorStyle}">$${valuePerShare.toFixed(0)}</td>`;
         }
@@ -501,27 +501,27 @@ function updateAutoRiskUI(metrics) {
     // Sharpe Ratio
     const sharpeEl = document.getElementById('risk-sharpe');
     sharpeEl.textContent = metrics.sharpeRatio.toFixed(2);
-    sharpeEl.style.color = metrics.sharpeRatio >= 1 ? 'var(--accent-green)' : 
-                           metrics.sharpeRatio >= 0.5 ? 'var(--accent-yellow)' : 'var(--accent-red)';
+    sharpeEl.style.color = metrics.sharpeRatio >= 1 ? '#00FF00' : 
+                           metrics.sharpeRatio >= 0.5 ? '#FFD700' : '#FF3333';
     
     // Beta
     const betaEl = document.getElementById('risk-beta');
     betaEl.textContent = metrics.beta.toFixed(2);
-    betaEl.style.color = metrics.beta > 1.2 ? 'var(--accent-red)' : 
-                        metrics.beta < 0.8 ? 'var(--accent-green)' : 'var(--text-primary)';
+    betaEl.style.color = metrics.beta > 1.2 ? '#FF3333' : 
+                        metrics.beta < 0.8 ? '#00FF00' : '#FFFFFF';
     
     // Volatility
     const volEl = document.getElementById('risk-volatility');
     volEl.textContent = `${(metrics.volatility * 100).toFixed(1)}%`;
-    volEl.style.color = metrics.volatility > 0.30 ? 'var(--accent-red)' : 
-                        metrics.volatility < 0.20 ? 'var(--accent-green)' : 'var(--accent-yellow)';
+    volEl.style.color = metrics.volatility > 0.30 ? '#FF3333' : 
+                        metrics.volatility < 0.20 ? '#00FF00' : '#FFD700';
     
     // Margin of Safety
     const marginEl = document.getElementById('risk-margin');
     marginEl.textContent = `${metrics.marginOfSafety.toFixed(1)}%`;
-    marginEl.style.color = metrics.marginOfSafety >= 30 ? 'var(--accent-green)' : 
-                           metrics.marginOfSafety >= 15 ? 'var(--accent-yellow)' : 
-                           metrics.marginOfSafety > 0 ? 'var(--accent-blue)' : 'var(--accent-red)';
+    marginEl.style.color = metrics.marginOfSafety >= 30 ? '#00FF00' : 
+                           metrics.marginOfSafety >= 15 ? '#FFD700' : 
+                           metrics.marginOfSafety > 0 ? '#3498db' : '#FF3333';
     
     // Assessment
     updateRiskAssessment(metrics);

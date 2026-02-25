@@ -318,10 +318,10 @@ function updateSensitivityAnalysis() {
             const upside = ((valuePerShare - currentPrice) / currentPrice) * 100;
             
             let colorClass = '';
-            if (upside >= 20) colorClass = 'style="color: var(--accent-green)"';
+            if (upside >= 20) colorClass = 'style="color: #00FF00"';
             else if (upside >= 5) colorClass = 'style="color: #90EE90"';
-            else if (upside > -10) colorClass = 'style="color: var(--accent-yellow)"';
-            else colorClass = 'style="color: var(--accent-red)"';
+            else if (upside > -10) colorClass = 'style="color: #FFD700"';
+            else colorClass = 'style="color: #FF3333"';
             
             tableHTML += `<td ${colorClass}>$${valuePerShare.toFixed(0)}</td>`;
         }

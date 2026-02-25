@@ -132,11 +132,11 @@ function updateRiskUI() {
         
         // Color coding
         if (riskMetrics.sharpeRatio >= 1) {
-            sharpeEl.style.color = 'var(--accent-green)';
+            sharpeEl.style.color = '#00FF00';
         } else if (riskMetrics.sharpeRatio >= 0.5) {
-            sharpeEl.style.color = 'var(--accent-yellow)';
+            sharpeEl.style.color = '#FFD700';
         } else {
-            sharpeEl.style.color = 'var(--accent-red)';
+            sharpeEl.style.color = '#FF3333';
         }
     }
     
@@ -146,11 +146,11 @@ function updateRiskUI() {
         betaEl.textContent = riskMetrics.beta.toFixed(2);
         
         if (riskMetrics.beta > 1.2) {
-            betaEl.style.color = 'var(--accent-red)';
+            betaEl.style.color = '#FF3333';
         } else if (riskMetrics.beta < 0.8) {
-            betaEl.style.color = 'var(--accent-green)';
+            betaEl.style.color = '#00FF00';
         } else {
-            betaEl.style.color = 'var(--text-primary)';
+            betaEl.style.color = '#FFFFFF';
         }
     }
     
@@ -160,11 +160,11 @@ function updateRiskUI() {
         volEl.textContent = `${(riskMetrics.volatility * 100).toFixed(1)}%`;
         
         if (riskMetrics.volatility > 0.30) {
-            volEl.style.color = 'var(--accent-red)';
+            volEl.style.color = '#FF3333';
         } else if (riskMetrics.volatility < 0.20) {
-            volEl.style.color = 'var(--accent-green)';
+            volEl.style.color = '#00FF00';
         } else {
-            volEl.style.color = 'var(--accent-yellow)';
+            volEl.style.color = '#FFD700';
         }
     }
     
@@ -175,13 +175,13 @@ function updateRiskUI() {
         marginEl.textContent = `${mos.toFixed(1)}%`;
         
         if (mos >= 30) {
-            marginEl.style.color = 'var(--accent-green)';
+            marginEl.style.color = '#00FF00';
         } else if (mos >= 15) {
-            marginEl.style.color = 'var(--accent-yellow)';
+            marginEl.style.color = '#FFD700';
         } else if (mos > 0) {
-            marginEl.style.color = 'var(--accent-blue)';
+            marginEl.style.color = '#3498db';
         } else {
-            marginEl.style.color = 'var(--accent-red)';
+            marginEl.style.color = '#FF3333';
         }
     }
 }

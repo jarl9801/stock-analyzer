@@ -389,9 +389,9 @@ function showNotification(message, type = 'info') {
         font-weight: 500;
         z-index: 1000;
         animation: slideIn 0.3s ease;
-        ${type === 'success' ? 'background: var(--accent-green-dim); color: var(--accent-green); border: 1px solid rgba(0, 208, 132, 0.3);' : 
-          type === 'error' ? 'background: var(--accent-red-dim); color: var(--accent-red); border: 1px solid rgba(255, 71, 87, 0.3);' :
-          'background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border);'}
+        ${type === 'success' ? 'background: rgba(0,255,0,0.1); color: #00FF00; border: 1px solid rgba(0, 208, 132, 0.3);' : 
+          type === 'error' ? 'background: rgba(255,51,51,0.1); color: #FF3333; border: 1px solid rgba(255, 71, 87, 0.3);' :
+          'background: var(--bg-card); color: #FFFFFF; border: 1px solid var(--border);'}
     `;
     notif.textContent = message;
     

@@ -457,7 +457,7 @@ function renderFCFSection(analysis, data) {
     const n = hist.years.length;
     
     // Quality Score
-    const scoreColor = quality.score >= 70 ? 'var(--accent-green)' : quality.score >= 45 ? 'var(--accent-yellow)' : 'var(--accent-red)';
+    const scoreColor = quality.score >= 70 ? '#00FF00' : quality.score >= 45 ? '#FFD700' : '#FF3333';
     
     container.innerHTML = `
         <!-- FCF Verdict Card -->
@@ -470,8 +470,8 @@ function renderFCFSection(analysis, data) {
                         <circle cx="60" cy="60" r="52" stroke="${scoreColor}" stroke-width="8" fill="none"
                             stroke-dasharray="${quality.score * 3.27} 327" stroke-dashoffset="0"
                             transform="rotate(-90 60 60)" stroke-linecap="round"/>
-                        <text x="60" y="55" text-anchor="middle" fill="${scoreColor}" font-size="28" font-weight="700" font-family="var(--font-mono)">${quality.score}</text>
-                        <text x="60" y="75" text-anchor="middle" fill="var(--text-muted)" font-size="11">CALIDAD</text>
+                        <text x="60" y="55" text-anchor="middle" fill="#FFFFFF" font-size="28" font-weight="700" font-family="'JetBrains Mono',monospace">${quality.score}</text>
+                        <text x="60" y="75" text-anchor="middle" fill="#888888" font-size="11" font-family="'JetBrains Mono',monospace">CALIDAD</text>
                     </svg>
                 </div>
             </div>
@@ -501,7 +501,7 @@ function renderFCFSection(analysis, data) {
                             <span class="quality-bar-pts" style="font-family:var(--font-mono)">${d.score}/${d.max}</span>
                         </div>
                         <div class="quality-bar-track">
-                            <div class="quality-bar-fill" style="width:${(d.score / d.max * 100)}%; background:${d.score / d.max >= 0.7 ? 'var(--accent-green)' : d.score / d.max >= 0.4 ? 'var(--accent-yellow)' : 'var(--accent-red)'}"></div>
+                            <div class="quality-bar-fill" style="width:${(d.score / d.max * 100)}%; background:${d.score / d.max >= 0.7 ? '#00FF00' : d.score / d.max >= 0.4 ? '#FFD700' : '#FF3333'}"></div>
                         </div>
                         <div class="quality-bar-desc">${d.desc}</div>
                     </div>
@@ -528,7 +528,7 @@ function renderFCFSection(analysis, data) {
                 <!-- FCF Yield -->
                 <div class="fcf-model-item">
                     <div class="fcf-model-label">FCF Yield</div>
-                    <div class="fcf-model-value" style="color:${valuations.fcfYield.value > valuations.fcfYield.treasuryYield ? 'var(--accent-green)' : 'var(--accent-red)'}">
+                    <div class="fcf-model-value" style="color:${valuations.fcfYield.value > valuations.fcfYield.treasuryYield ? '#00FF00' : '#FF3333'}">
                         ${valuations.fcfYield.value.toFixed(2)}%
                     </div>
                     <div class="fcf-model-sub">vs Treasury ${valuations.fcfYield.treasuryYield}%</div>
@@ -536,7 +536,7 @@ function renderFCFSection(analysis, data) {
                 <!-- EV/FCF -->
                 <div class="fcf-model-item">
                     <div class="fcf-model-label">EV/FCF</div>
-                    <div class="fcf-model-value" style="color:${valuations.evFcf && valuations.evFcf < valuations.sectorEvFcf ? 'var(--accent-green)' : 'var(--accent-yellow)'}">
+                    <div class="fcf-model-value" style="color:${valuations.evFcf && valuations.evFcf < valuations.sectorEvFcf ? '#00FF00' : '#FFD700'}">
                         ${valuations.evFcf ? valuations.evFcf.toFixed(1) + 'x' : 'N/A'}
                     </div>
                     <div class="fcf-model-sub">Sector: ${valuations.sectorEvFcf}x</div>
@@ -544,7 +544,7 @@ function renderFCFSection(analysis, data) {
                 <!-- Payback -->
                 <div class="fcf-model-item">
                     <div class="fcf-model-label">Payback Period</div>
-                    <div class="fcf-model-value" style="color:${valuations.paybackYears < 15 ? 'var(--accent-green)' : valuations.paybackYears < 25 ? 'var(--accent-yellow)' : 'var(--accent-red)'}">
+                    <div class="fcf-model-value" style="color:${valuations.paybackYears < 15 ? '#00FF00' : valuations.paybackYears < 25 ? '#FFD700' : '#FF3333'}">
                         ${valuations.paybackYears === Infinity ? '∞' : valuations.paybackYears.toFixed(1)} años
                     </div>
                     <div class="fcf-model-sub">Recuperar inversión al FCF actual</div>
@@ -562,7 +562,7 @@ function renderFCFSection(analysis, data) {
                 <h4>DCF — 3 Escenarios (10 años)</h4>
                 <div class="fcf-scenarios-grid">
                     ${Object.entries(valuations.dcfScenarios).map(([key, s]) => {
-                        const color = key === 'bear' ? 'var(--accent-red)' : key === 'base' ? 'var(--accent-blue)' : 'var(--accent-green)';
+                        const color = key === 'bear' ? '#FF3333' : key === 'base' ? '#3498db' : '#00FF00';
                         return `
                         <div class="fcf-scenario-item" style="border-color:${color}">
                             <div class="scenario-label" style="color:${color}">${s.label}</div>
@@ -571,7 +571,7 @@ function renderFCFSection(analysis, data) {
                                 <span>Growth: ${(s.growth * 100).toFixed(0)}%</span>
                                 <span>WACC: ${(s.wacc * 100).toFixed(0)}%</span>
                             </div>
-                            <div class="scenario-upside" style="color:${s.upside >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'}">
+                            <div class="scenario-upside" style="color:${s.upside >= 0 ? '#00FF00' : '#FF3333'}">
                                 ${s.upside >= 0 ? '+' : ''}${s.upside.toFixed(1)}%
                             </div>
                         </div>`;
@@ -723,7 +723,7 @@ function renderFCFChartFallback(hist, container) {
         <div class="fcf-chart-fallback">
             ${hist.years.map((y, i) => `
                 <div class="fcf-bar-group">
-                    <div class="fcf-bar" style="height:${Math.max(2, hist.fcf[i] * scale)}px;background:${hist.fcf[i] < hist.netIncome[i] * 0.9 ? 'var(--accent-red)' : 'var(--accent-green)'}"></div>
+                    <div class="fcf-bar" style="height:${Math.max(2, hist.fcf[i] * scale)}px;background:${hist.fcf[i] < hist.netIncome[i] * 0.9 ? '#FF3333' : '#00FF00'}"></div>
                     <span class="fcf-bar-label">${y}</span>
                 </div>
             `).join('')}
@@ -759,7 +759,7 @@ function updateStockHeaderFCF(analysis) {
             priceSection.appendChild(yieldEl);
         }
         const y = analysis.valuations.fcfYield.value;
-        yieldEl.innerHTML = `FCF Yield: <strong style="color:${y > 4.5 ? 'var(--accent-green)' : y > 2 ? 'var(--accent-yellow)' : 'var(--accent-red)'}">${y.toFixed(2)}%</strong>`;
+        yieldEl.innerHTML = `FCF Yield: <strong style="color:${y > 4.5 ? '#00FF00' : y > 2 ? '#FFD700' : '#FF3333'}">${y.toFixed(2)}%</strong>`;
     }
 }
 
