@@ -3,24 +3,9 @@
 // ============================================
 
 // Variables globales - currentStock se define en app.js
-let valuations = {
-    dcf: null,
-    ddm: null,
-    multiples: null
-};
-
-// ============================================
-// Helper functions
-// ============================================
-function formatCurrency(value) {
-    if (value === null || value === undefined || isNaN(value)) return '$--';
-    return '$' + value.toFixed(2);
-}
-
-function formatPercent(value) {
-    if (value === null || value === undefined || isNaN(value)) return '--%';
-    return (value >= 0 ? '+' : '') + value.toFixed(1) + '%';
-}
+// valuations is the shared global for all modules
+var valuations = { dcf: null, ddm: null, multiples: null, rim: null, aeg: null, eva: null };
+// Helper formatCurrency y formatPercent definidos en app.js
 
 // ============================================
 // DCF - Discounted Cash Flow
@@ -347,110 +332,6 @@ function updateSensitivityAnalysis() {
     tableHTML += '</tbody></table>';
     
     document.getElementById('sensitivity-table').innerHTML = tableHTML;
-}
-
-// ============================================
-// Búsqueda de Stock
-// ============================================
-async function searchStock() {
-    const ticker = document.getElementById('ticker-search').value.toUpperCase().trim();
-    
-    if (!ticker) {
-        alert('Ingresa un ticker');
-        return;
-    }
-    
-    // Obtener datos reales desde la base de datos
-    try {
-        const stockData = await fetchStockData(ticker);
-        
-        if (!stockData) {
-            alert(`No se encontraron datos para ${ticker}`);
-            return;
-        }
-        
-        // Guardar stock actual
-        currentStock = {
-            ticker: ticker,
-            name: stockData.name,
-            price: stockData.price,
-            change: stockData.change,
-            changePercent: stockData.changePercent,
-            sector: stockData.sector,
-            ...stockData
-        };
-        
-        // Actualizar UI del header
-        document.getElementById('stock-name').textContent = currentStock.name;
-        document.getElementById('stock-ticker').textContent = `${currentStock.ticker} • ${currentStock.sector}`;
-        
-        const priceSection = document.getElementById('stock-price-section');
-        priceSection.style.display = 'block';
-        
-        document.getElementById('current-price').textContent = `$${currentStock.price.toFixed(2)}`;
-        
-        const changeEl = document.getElementById('price-change');
-        const changePercent = currentStock.changePercent || ((currentStock.change / currentStock.price) * 100);
-        changeEl.textContent = `${currentStock.change >= 0 ? '+' : ''}${currentStock.change.toFixed(2)} (${changePercent.toFixed(2)}%)`;
-        changeEl.className = `price-change ${currentStock.change >= 0 ? 'positive' : 'negative'}`;
-        
-        // Mostrar contenido de análisis
-        document.getElementById('analysis-content').style.display = 'grid';
-        
-        // Resetear valoraciones
-        valuations = { dcf: null, ddm: null, multiples: null };
-        
-        // AUTOCOMPLETAR TODOS LOS CAMPOS CON DATOS REALES
-        await performFullAnalysis(stockData);
-        
-        // Actualizar resumen
-        updateValuationSummary();
-        
-    } catch (error) {
-        console.error('Error fetching stock data:', error);
-        alert(`Error al obtener datos para ${ticker}`);
-    }
-}
-
-// Helper functions
-function getCompanyName(ticker) {
-    const names = {
-        'AAPL': 'Apple Inc.',
-        'MSFT': 'Microsoft Corporation',
-        'GOOGL': 'Alphabet Inc.',
-        'AMZN': 'Amazon.com Inc.',
-        'TSLA': 'Tesla Inc.',
-        'META': 'Meta Platforms Inc.',
-        'NVDA': 'NVIDIA Corporation',
-        'JPM': 'JPMorgan Chase & Co.',
-        'V': 'Visa Inc.',
-        'WMT': 'Walmart Inc.'
-    };
-    return names[ticker] || `${ticker} Corp.`;
-}
-
-function getSector(ticker) {
-    const sectors = {
-        'AAPL': 'Tecnología',
-        'MSFT': 'Tecnología',
-        'GOOGL': 'Tecnología',
-        'AMZN': 'Consumo',
-        'TSLA': 'Automotriz',
-        'META': 'Tecnología',
-        'NVDA': 'Tecnología',
-        'JPM': 'Finanzas',
-        'V': 'Finanzas',
-        'WMT': 'Consumo'
-    };
-    return sectors[ticker] || 'Diversificado';
-}
-
-function getRandomPrice(min, max) {
-    return Math.random() * (max - min) + min;
-}
-
-function getRandomChange() {
-    return (Math.random() - 0.5) * 20;
 }
 
 // Exportar funciones

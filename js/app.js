@@ -6,6 +6,7 @@
 let currentView = 'analyzer';
 let currentStock = null;
 let isLoading = false;
+// valuations declared in valuation.js (loaded first)
 
 // ============================================
 // Inicialización
@@ -168,8 +169,8 @@ function updateStockUI(data) {
 // ============================================
 // Actualizar UI con valoraciones avanzadas
 // ============================================
-function updateAdvancedValuationUI(valuations, data) {
-    console.log('[App] Updating UI with advanced valuations:', valuations);
+function updateAdvancedValuationUI(valuations_obj, data) {
+    console.log('[App] Updating UI with advanced valuations:', valuations_obj);
     
     // Helper para setear valores de forma segura
     const setValue = (id, value, suffix = '') => {
@@ -183,59 +184,59 @@ function updateAdvancedValuationUI(valuations, data) {
     };
     
     // 1. DCF MEJORADO
-    if (valuations.dcf) {
-        setInputValue('dcf-fcf', valuations.dcf.projectedFCF ? valuations.dcf.projectedFCF[0].toFixed(0) : (data.fcf / 1000000).toFixed(0));
-        setInputValue('dcf-growth', (valuations.dcf.growthRate * 100).toFixed(1));
-        setInputValue('dcf-wacc', (valuations.dcf.wacc * 100).toFixed(1));
+    if (valuations_obj.dcf) {
+        setInputValue('dcf-fcf', valuations_obj.dcf.projectedFCF ? valuations_obj.dcf.projectedFCF[0].toFixed(0) : (data.fcf / 1000000).toFixed(0));
+        setInputValue('dcf-growth', (valuations_obj.dcf.growthRate * 100).toFixed(1));
+        setInputValue('dcf-wacc', (valuations_obj.dcf.wacc * 100).toFixed(1));
         setInputValue('dcf-shares', (data.shares / 1000000).toFixed(0));
-        setValue('dcf-value', '$' + valuations.dcf.valuePerShare.toFixed(2));
-        setValue('dcf-upside', valuations.dcf.upside.toFixed(1), '%');
+        setValue('dcf-value', '$' + valuations_obj.dcf.valuePerShare.toFixed(2));
+        setValue('dcf-upside', valuations_obj.dcf.upside.toFixed(1), '%');
     }
     
     // 2. RESIDUAL INCOME MODEL
-    if (valuations.rim) {
-        setValue('rim-value', '$' + valuations.rim.valuePerShare.toFixed(2));
-        setValue('rim-book', '$' + valuations.rim.bookValue.toFixed(2));
-        setValue('rim-residual', '$' + valuations.rim.residualIncome.toFixed(2));
-        setValue('rim-cost', (valuations.rim.costOfEquity * 100).toFixed(1), '%');
-        setValue('rim-upside', valuations.rim.upside.toFixed(1), '%');
+    if (valuations_obj.rim) {
+        setValue('rim-value', '$' + valuations_obj.rim.valuePerShare.toFixed(2));
+        setValue('rim-book', '$' + valuations_obj.rim.bookValue.toFixed(2));
+        setValue('rim-residual', '$' + valuations_obj.rim.residualIncome.toFixed(2));
+        setValue('rim-cost', (valuations_obj.rim.costOfEquity * 100).toFixed(1), '%');
+        setValue('rim-upside', valuations_obj.rim.upside.toFixed(1), '%');
     }
     
     // 3. AEG (Abnormal Earnings Growth)
-    if (valuations.aeg) {
-        setValue('aeg-value', '$' + valuations.aeg.valuePerShare.toFixed(2));
-        setValue('aeg-roe', (valuations.aeg.roe * 100).toFixed(1), '%');
-        setValue('aeg-growth', '$' + valuations.aeg.abnormalGrowth.toFixed(2));
-        setValue('aeg-upside', valuations.aeg.upside.toFixed(1), '%');
+    if (valuations_obj.aeg) {
+        setValue('aeg-value', '$' + valuations_obj.aeg.valuePerShare.toFixed(2));
+        setValue('aeg-roe', (valuations_obj.aeg.roe * 100).toFixed(1), '%');
+        setValue('aeg-growth', '$' + valuations_obj.aeg.abnormalGrowth.toFixed(2));
+        setValue('aeg-upside', valuations_obj.aeg.upside.toFixed(1), '%');
     }
     
     // 4. EVA
-    if (valuations.eva) {
-        setValue('eva-value', '$' + valuations.eva.valuePerShare.toFixed(2));
-        setValue('eva-nopat', (valuations.eva.nopat / 1e9).toFixed(2), 'B');
-        setValue('eva-wacc', (valuations.eva.wacc * 100).toFixed(1), '%');
-        setValue('eva-amount', (valuations.eva.eva / 1e9).toFixed(2), 'B');
-        setValue('eva-upside', valuations.eva.upside.toFixed(1), '%');
+    if (valuations_obj.eva) {
+        setValue('eva-value', '$' + valuations_obj.eva.valuePerShare.toFixed(2));
+        setValue('eva-nopat', (valuations_obj.eva.nopat / 1e9).toFixed(2), 'B');
+        setValue('eva-wacc', (valuations_obj.eva.wacc * 100).toFixed(1), '%');
+        setValue('eva-amount', (valuations_obj.eva.eva / 1e9).toFixed(2), 'B');
+        setValue('eva-upside', valuations_obj.eva.upside.toFixed(1), '%');
     }
     
     // 5. MÚLTIPLOS AJUSTADOS
-    if (valuations.multiples) {
+    if (valuations_obj.multiples) {
         setInputValue('mult-eps', data.eps.toFixed(2));
-        setInputValue('mult-pe', valuations.multiples.peUsed.toFixed(1));
+        setInputValue('mult-pe', valuations_obj.multiples.peUsed.toFixed(1));
         setInputValue('mult-bv', data.bookValue.toFixed(2));
-        setInputValue('mult-pb', valuations.multiples.pbUsed.toFixed(1));
-        setValue('mult-pe-value', '$' + valuations.multiples.valuePE.toFixed(2));
-        setValue('mult-pb-value', '$' + valuations.multiples.valuePB.toFixed(2));
-        setValue('mult-avg-value', '$' + valuations.multiples.valueAvg.toFixed(2));
+        setInputValue('mult-pb', valuations_obj.multiples.pbUsed.toFixed(1));
+        setValue('mult-pe-value', '$' + valuations_obj.multiples.valuePE.toFixed(2));
+        setValue('mult-pb-value', '$' + valuations_obj.multiples.valuePB.toFixed(2));
+        setValue('mult-avg-value', '$' + valuations_obj.multiples.valueAvg.toFixed(2));
     }
     
     // RESUMEN FINAL
-    if (valuations.fairValue) {
-        setValue('fair-value', '$' + valuations.fairValue.toFixed(2));
+    if (valuations_obj.fairValue) {
+        setValue('fair-value', '$' + valuations_obj.fairValue.toFixed(2));
         setValue('summary-current', '$' + data.price.toFixed(2));
-        setValue('summary-fair', '$' + valuations.fairValue.toFixed(2));
+        setValue('summary-fair', '$' + valuations_obj.fairValue.toFixed(2));
         
-        const upside = valuations.upside;
+        const upside = valuations_obj.upside;
         const discountBadge = document.getElementById('discount-badge');
         if (discountBadge) {
             if (upside >= 0) {
@@ -262,6 +263,41 @@ function updateAdvancedValuationUI(valuations, data) {
         }
     }
     
+    // Store globally for portfolio.js / risk-analysis.js compatibility
+    valuations = {
+        dcf: valuations_obj.dcf,
+        ddm: null,
+        multiples: valuations_obj.multiples,
+        rim: valuations_obj.rim,
+        aeg: valuations_obj.aeg,
+        eva: valuations_obj.eva
+    };
+
+    // Calculate DDM separately (not in advanced-valuation.js)
+    if (typeof calculateDDMAuto === 'function') {
+        const ddm = calculateDDMAuto(data);
+        valuations.ddm = ddm;
+        if (ddm) {
+            const setInputValue = (id, value) => { const el = document.getElementById(id); if (el && value != null) el.value = value; };
+            setInputValue('ddm-dividend', data.dividend.toFixed(2));
+            setInputValue('ddm-growth', (ddm.growthRate * 100).toFixed(1));
+            setInputValue('ddm-discount', (ddm.discountRate * 100).toFixed(1));
+            setValue('ddm-value', '$' + ddm.valuePerShare.toFixed(2));
+            setValue('ddm-yield', ddm.yieldAtFairValue.toFixed(2) + '%');
+        }
+    }
+
+    // Sensitivity table
+    if (valuations_obj.dcf && typeof updateSensitivityTable === 'function') {
+        updateSensitivityTable(valuations_obj.dcf, data);
+    }
+
+    // Risk metrics
+    if (typeof calculateAutoRiskMetrics === 'function' && typeof updateAutoRiskUI === 'function') {
+        const riskMetrics = calculateAutoRiskMetrics(data, valuations_obj);
+        updateAutoRiskUI(riskMetrics);
+    }
+
     // Autollenar campos legacy para compatibilidad
     autoFillValuationFields(data);
 }
@@ -333,7 +369,7 @@ function showLoading(show) {
         searchBtn.innerHTML = '<div class="spinner" style="width: 20px; height: 20px; border-width: 2px;"></div>';
         searchBtn.disabled = true;
     } else {
-        searchBtn.innerHTML = '🔍';
+        searchBtn.innerHTML = 'GO';
         searchBtn.disabled = false;
     }
 }

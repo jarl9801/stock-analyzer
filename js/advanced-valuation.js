@@ -272,7 +272,8 @@ function calculateEnhancedDCF(data) {
         growthRate: growthRate,
         fcfQuality: fcfQuality,
         projectedFCF: projectedFCF,
-        upside: ((valuePerShare - data.price) / data.price) * 100
+        upside: ((valuePerShare - data.price) / data.price) * 100,
+        terminalGrowth: terminalGrowth
     };
 }
 
