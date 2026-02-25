@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>STOCK ANALYZER PRO — Terminal</title>
-    <link rel="stylesheet" href="css/styles.css?v=74532ce">
+    <link rel="stylesheet" href="css/styles.css?v=20260225">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -105,6 +105,26 @@
                             <div class="stock-price" id="stock-price-section" style="display: none;">
                                 <span class="current-price" id="current-price">--</span>
                                 <span class="price-change" id="price-change">--</span>
+                            </div>
+                        </div>
+
+                        <!-- Price Chart Section -->
+                        <div id="price-chart-section" class="price-chart-section" style="display: none;">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3>📈 PRICE HISTORY</h3>
+                                    <div class="chart-range-buttons">
+                                        <button class="chart-range-btn active" data-range="1mo" onclick="changeChartRange('1mo')">1M</button>
+                                        <button class="chart-range-btn" data-range="3mo" onclick="changeChartRange('3mo')">3M</button>
+                                        <button class="chart-range-btn" data-range="6mo" onclick="changeChartRange('6mo')">6M</button>
+                                        <button class="chart-range-btn" data-range="1y" onclick="changeChartRange('1y')">1Y</button>
+                                        <button class="chart-range-btn" data-range="5y" onclick="changeChartRange('5y')">5Y</button>
+                                    </div>
+                                </div>
+                                <div class="chart-container" style="position: relative; height: 280px;">
+                                    <canvas id="price-chart-canvas"></canvas>
+                                </div>
+                                <div id="chart-status" class="chart-status"></div>
                             </div>
                         </div>
 
@@ -557,13 +577,15 @@
     </script>
 
     <!-- Scripts -->
-    <script src="js/data-fetcher.js?v=74532ce"></script>
-    <script src="js/fcf-analysis.js?v=74532ce"></script>
-    <script src="js/advanced-valuation.js?v=74532ce"></script>
-    <script src="js/auto-valuation.js?v=74532ce"></script>
-    <script src="js/valuation.js?v=74532ce"></script>
-    <script src="js/risk-analysis.js?v=74532ce"></script>
-    <script src="js/portfolio.js?v=74532ce"></script>
-    <script src="js/app.js?v=74532ce"></script>
+    <script src="js/yahoo-proxy.js?v=20260225"></script>
+    <script src="js/data-fetcher.js?v=20260225"></script>
+    <script src="js/fcf-analysis.js?v=20260225"></script>
+    <script src="js/advanced-valuation.js?v=20260225"></script>
+    <script src="js/auto-valuation.js?v=20260225"></script>
+    <script src="js/valuation.js?v=20260225"></script>
+    <script src="js/risk-analysis.js?v=20260225"></script>
+    <script src="js/portfolio.js?v=20260225"></script>
+    <script src="js/price-chart.js?v=20260225"></script>
+    <script src="js/app.js?v=20260225"></script>
 </body>
 </html>

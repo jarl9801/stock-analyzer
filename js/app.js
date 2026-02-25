@@ -74,10 +74,82 @@ function switchView(view) {
 function setupSearchAutocomplete() {
     const searchInput = document.getElementById('ticker-search');
     
-    searchInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            searchStock();
+    // Create dropdown
+    const dropdown = document.createElement('div');
+    dropdown.className = 'autocomplete-dropdown';
+    dropdown.style.display = 'none';
+    searchInput.parentElement.style.position = 'relative';
+    searchInput.parentElement.appendChild(dropdown);
+
+    let selectedIdx = -1;
+
+    searchInput.addEventListener('input', function() {
+        const query = this.value.toUpperCase().trim();
+        if (!query || typeof STOCK_DATABASE === 'undefined') {
+            dropdown.style.display = 'none';
+            return;
         }
+
+        const matches = Object.entries(STOCK_DATABASE)
+            .filter(([ticker, data]) =>
+                ticker.includes(query) ||
+                (data.name && data.name.toUpperCase().includes(query))
+            )
+            .slice(0, 8);
+
+        if (matches.length === 0) {
+            dropdown.style.display = 'none';
+            return;
+        }
+
+        selectedIdx = -1;
+        dropdown.innerHTML = matches.map(([ticker, data], i) =>
+            `<div class="autocomplete-item" data-ticker="${ticker}" data-index="${i}">
+                <span class="ac-ticker">${ticker}</span>
+                <span class="ac-name">${data.name}</span>
+            </div>`
+        ).join('');
+        dropdown.style.display = 'block';
+
+        dropdown.querySelectorAll('.autocomplete-item').forEach(item => {
+            item.addEventListener('mousedown', function(e) {
+                e.preventDefault();
+                searchInput.value = this.dataset.ticker;
+                dropdown.style.display = 'none';
+                searchStock();
+            });
+        });
+    });
+
+    searchInput.addEventListener('keydown', function(e) {
+        const items = dropdown.querySelectorAll('.autocomplete-item');
+        if (dropdown.style.display === 'none' || items.length === 0) {
+            if (e.key === 'Enter') searchStock();
+            return;
+        }
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            selectedIdx = Math.min(selectedIdx + 1, items.length - 1);
+            items.forEach((it, i) => it.classList.toggle('selected', i === selectedIdx));
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            selectedIdx = Math.max(selectedIdx - 1, 0);
+            items.forEach((it, i) => it.classList.toggle('selected', i === selectedIdx));
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (selectedIdx >= 0 && items[selectedIdx]) {
+                searchInput.value = items[selectedIdx].dataset.ticker;
+                dropdown.style.display = 'none';
+            }
+            searchStock();
+        } else if (e.key === 'Escape') {
+            dropdown.style.display = 'none';
+        }
+    });
+
+    searchInput.addEventListener('blur', function() {
+        setTimeout(() => { dropdown.style.display = 'none'; }, 150);
     });
 }
 
@@ -117,6 +189,11 @@ async function searchStock() {
         showNotification('Calculando valoraciones avanzadas...', 'info');
         console.log('[App] Starting advanced analysis...');
         
+        // Price Chart
+        if (typeof renderPriceChart === 'function') {
+            renderPriceChart(data.ticker || ticker);
+        }
+
         // FCF Deep Dive Analysis
         if (typeof performFCFAnalysis === 'function') {
             const fcfAnalysis = performFCFAnalysis(data);

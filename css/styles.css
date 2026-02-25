@@ -1674,3 +1674,106 @@ table {
 body {
     padding-bottom: 22px;
 }
+
+/* ============================================
+   PRICE CHART
+   ============================================ */
+.price-chart-section {
+    margin-bottom: 16px;
+}
+
+.price-chart-section .card {
+    padding: 16px;
+}
+
+.price-chart-section .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.chart-range-buttons {
+    display: flex;
+    gap: 4px;
+}
+
+.chart-range-btn {
+    background: transparent;
+    border: 1px solid #333;
+    color: #888;
+    padding: 4px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.chart-range-btn:hover {
+    border-color: #555;
+    color: #ccc;
+}
+
+.chart-range-btn.active {
+    background: #00FF00;
+    color: #000;
+    border-color: #00FF00;
+    font-weight: bold;
+}
+
+.chart-container canvas {
+    width: 100% !important;
+}
+
+.chart-status {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #888;
+    text-align: center;
+    padding-top: 6px;
+}
+
+/* ============================================
+   AUTOCOMPLETE DROPDOWN
+   ============================================ */
+.autocomplete-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 60px;
+    background: #111;
+    border: 1px solid #333;
+    border-top: none;
+    z-index: 500;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.autocomplete-item {
+    display: flex;
+    gap: 12px;
+    padding: 10px 14px;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    border-bottom: 1px solid #1a1a1a;
+    transition: background 0.1s;
+}
+
+.autocomplete-item:hover,
+.autocomplete-item.selected {
+    background: #1a1a1a;
+}
+
+.ac-ticker {
+    color: #00FF00;
+    font-weight: bold;
+    min-width: 60px;
+}
+
+.ac-name {
+    color: #888;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

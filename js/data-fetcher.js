@@ -289,6 +289,114 @@ const STOCK_DATABASE = {
         debt: 3200000000,
         cash: 8500000000,
         currency: 'USD'
+    },
+    'HPQ': {
+        name: 'HP Inc.',
+        sector: 'Tecnología',
+        price: 18.20,
+        marketCap: 17472000000,
+        pe: 11.0,
+        pb: null,
+        eps: 1.65,
+        bookValue: -2.50,
+        dividend: 1.20,
+        beta: 1.05,
+        fcf: 3000000000,
+        shares: 960000000,
+        revenue: 53400000000,
+        debt: 9800000000,
+        cash: 3100000000,
+        currency: 'USD'
+    },
+    'PYPL': {
+        name: 'PayPal Holdings Inc.',
+        sector: 'Tecnología',
+        price: 47.00,
+        marketCap: 49350000000,
+        pe: 15.0,
+        pb: 2.61,
+        eps: 3.13,
+        bookValue: 18.00,
+        dividend: 0,
+        beta: 1.30,
+        fcf: 5400000000,
+        shares: 1050000000,
+        revenue: 31400000000,
+        debt: 11000000000,
+        cash: 16300000000,
+        currency: 'USD'
+    },
+    'ADBE': {
+        name: 'Adobe Inc.',
+        sector: 'Tecnología',
+        price: 254.00,
+        marketCap: 111760000000,
+        pe: 22.0,
+        pb: 9.07,
+        eps: 11.55,
+        bookValue: 28.00,
+        dividend: 0,
+        beta: 1.10,
+        fcf: 8000000000,
+        shares: 440000000,
+        revenue: 21500000000,
+        debt: 5600000000,
+        cash: 7600000000,
+        currency: 'USD'
+    },
+    'NKE': {
+        name: 'Nike Inc.',
+        sector: 'Consumo',
+        price: 64.00,
+        marketCap: 95360000000,
+        pe: 22.0,
+        pb: 4.57,
+        eps: 2.91,
+        bookValue: 14.00,
+        dividend: 1.56,
+        beta: 1.10,
+        fcf: 5000000000,
+        shares: 1490000000,
+        revenue: 51200000000,
+        debt: 12000000000,
+        cash: 10600000000,
+        currency: 'USD'
+    },
+    'DVN': {
+        name: 'Devon Energy Corp.',
+        sector: 'Energía',
+        price: 43.00,
+        marketCap: 26230000000,
+        pe: 8.0,
+        pb: 1.54,
+        eps: 5.38,
+        bookValue: 28.00,
+        dividend: 1.44,
+        beta: 1.80,
+        fcf: 4000000000,
+        shares: 610000000,
+        revenue: 15300000000,
+        debt: 8700000000,
+        cash: 800000000,
+        currency: 'USD'
+    },
+    'ESPO': {
+        name: 'VanEck Video Gaming & eSports ETF',
+        sector: 'Tecnología',
+        price: 92.00,
+        marketCap: 500000000,
+        pe: 25.0,
+        pb: 4.0,
+        eps: 3.68,
+        bookValue: 23.00,
+        dividend: 0.30,
+        beta: 1.10,
+        fcf: 0,
+        shares: 5400000,
+        revenue: 0,
+        debt: 0,
+        cash: 0,
+        currency: 'USD'
     }
 };
 
@@ -298,11 +406,40 @@ const STOCK_DATABASE = {
 async function fetchStockData(ticker) {
     ticker = ticker.toUpperCase().trim();
     
+    // 1. Try Yahoo Finance first (real-time data)
+    if (typeof fetchStockDataWithYahoo === 'function') {
+        try {
+            console.log(`[fetchStockData] Trying Yahoo Finance for ${ticker}...`);
+            const yahooData = await fetchStockDataWithYahoo(ticker);
+            if (yahooData && yahooData.price > 0) {
+                console.log(`[fetchStockData] ✅ Yahoo Finance data for ${ticker}`);
+                // Merge with local DB for any missing fields
+                const localData = STOCK_DATABASE[ticker] || {};
+                return {
+                    ...localData,
+                    ...yahooData,
+                    // Ensure critical fields exist (Yahoo may miss some)
+                    fcf: yahooData.fcf || localData.fcf || 0,
+                    shares: yahooData.shares || localData.shares || 0,
+                    revenue: yahooData.revenue || localData.revenue || 0,
+                    debt: yahooData.debt || localData.debt || 0,
+                    cash: yahooData.cash || localData.cash || 0,
+                    ticker: ticker
+                };
+            }
+        } catch (e) {
+            console.warn(`[fetchStockData] Yahoo failed for ${ticker}:`, e.message);
+        }
+    }
+    
+    // 2. Fallback to local database
     if (STOCK_DATABASE[ticker]) {
+        console.log(`[fetchStockData] Using local DB for ${ticker}`);
         const data = STOCK_DATABASE[ticker];
         const variation = (Math.random() - 0.5) * 0.01;
         return {
             ...data,
+            ticker: ticker,
             price: data.price * (1 + variation),
             change: data.price * variation,
             changePercent: variation * 100,
@@ -311,6 +448,7 @@ async function fetchStockData(ticker) {
         };
     }
     
+    // 3. Synthetic fallback
     return generateSyntheticData(ticker);
 }
 
