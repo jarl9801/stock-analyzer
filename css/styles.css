@@ -1777,3 +1777,161 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+/* ============================================
+   LOTS TABLE (Portfolio Expansion)
+   ============================================ */
+.lots-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+    background: #0d0d0d;
+}
+.lots-table th {
+    color: var(--orange);
+    text-align: left;
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 500;
+    font-size: 10px;
+    text-transform: uppercase;
+}
+.lots-table td {
+    padding: 4px 8px;
+    border-bottom: 1px solid #1a1a1a;
+    color: var(--white);
+}
+.lots-header-row > td {
+    padding: 0 !important;
+    background: #0d0d0d;
+    border-left: 3px solid var(--orange);
+}
+.portfolio-row { transition: background 0.15s; }
+.portfolio-row:hover { background: #111 !important; }
+.portfolio-row.expanded { background: #0a0a0a; border-left: 3px solid var(--orange); }
+.btn-action {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--green);
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+}
+.btn-action:hover { border-color: var(--green); }
+.add-lot-row input {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    color: var(--white);
+    font-family: var(--font);
+    font-size: 11px;
+    padding: 4px 6px;
+    border-radius: 3px;
+}
+.add-lot-row input:focus {
+    border-color: var(--orange);
+    outline: none;
+}
+
+/* ============================================
+   SCANNER CARDS
+   ============================================ */
+.scanner-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 12px;
+    padding: 12px 0;
+}
+.scanner-card {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.15s;
+}
+.scanner-card:hover {
+    border-color: var(--orange);
+    transform: translateY(-2px);
+}
+.scanner-card.score-strong { border-left: 3px solid var(--green); }
+.scanner-card.score-watch { border-left: 3px solid var(--amber); }
+.scanner-card.score-risky { border-left: 3px solid var(--red); }
+
+.scanner-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+.scanner-ticker {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--orange);
+    margin-right: 8px;
+}
+.scanner-name {
+    font-size: 11px;
+    color: var(--gray);
+    display: block;
+    margin-top: 2px;
+}
+.scanner-score-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border: 1px solid;
+    border-radius: 3px;
+    white-space: nowrap;
+}
+.scanner-card-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.scanner-metric {
+    display: flex;
+    flex-direction: column;
+}
+.scanner-metric-label {
+    font-size: 9px;
+    color: var(--gray);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.scanner-metric-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--white);
+}
+.scanner-metric-value.negative { color: var(--red); }
+.scanner-card-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.scanner-sector {
+    font-size: 10px;
+    color: var(--gray);
+    text-transform: uppercase;
+}
+
+/* Scanner Progress */
+.scanner-progress-bar {
+    width: 100%;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-bottom: 6px;
+    overflow: hidden;
+}
+.scanner-progress-fill {
+    height: 100%;
+    background: var(--orange);
+    border-radius: 2px;
+    transition: width 0.3s;
+}
+.scanner-results-container {
+    min-height: 100px;
+}

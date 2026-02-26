@@ -31,11 +31,14 @@
             <div class="fn-key" data-view="watchlist" onclick="document.querySelector('.nav-item[data-view=watchlist]').click()">
                 <span class="fn-label">F4</span><span class="fn-text">Watchlist</span>
             </div>
+            <div class="fn-key" data-view="scanner" onclick="document.querySelector('.nav-item[data-view=scanner]').click()">
+                <span class="fn-label">F5</span><span class="fn-text">Scanner</span>
+            </div>
             <div class="fn-key" onclick="exportAnalysis && exportAnalysis()">
-                <span class="fn-label">F5</span><span class="fn-text">Export</span>
+                <span class="fn-label">F6</span><span class="fn-text">Export</span>
             </div>
             <div class="fn-key" onclick="addToPortfolio && addToPortfolio()">
-                <span class="fn-label">F6</span><span class="fn-text">Add Pos</span>
+                <span class="fn-label">F7</span><span class="fn-text">Add Pos</span>
             </div>
         </div>
 
@@ -68,6 +71,10 @@
                     <div class="nav-item" data-view="watchlist">
                         <span class="nav-icon">⭐</span>
                         <span>Watchlist</span>
+                    </div>
+                    <div class="nav-item" data-view="scanner">
+                        <span class="nav-icon">🔍</span>
+                        <span>Scanner</span>
                     </div>
                 </nav>
                 
@@ -423,15 +430,15 @@
                                 <thead>
                                     <tr>
                                         <th>Ticker</th>
-                                        <th>Nombre</th>
-                                        <th>Posición</th>
-                                        <th>Precio Entrada</th>
-                                        <th>Precio Actual</th>
-                                        <th>Valor</th>
+                                        <th>Name</th>
+                                        <th>Shares</th>
+                                        <th>Avg Entry</th>
+                                        <th>Current</th>
+                                        <th>Value</th>
                                         <th>P&L</th>
-                                        <th>% P&L</th>
-                                        <th>Valor Intrínseco</th>
-                                        <th>Acciones</th>
+                                        <th>P&L%</th>
+                                        <th>Fair Value</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="portfolio-tbody">
@@ -495,6 +502,43 @@
                         <div class="screener-results" id="screener-results">
                             <p class="placeholder-text">Configura los filtros y ejecuta el screener</p>
                         </div>
+                    </div>
+
+                    <!-- VIEW: SCANNER (Opportunity Scanner) -->
+                    <div class="view" id="view-scanner">
+                        <div class="screener-filters">
+                            <h2>🔍 OPPORTUNITY SCANNER</h2>
+                            <p style="color:var(--gray);margin-bottom:12px;font-size:12px;">Scan for stocks that dropped significantly but have strong fundamentals — buy the dip opportunities.</p>
+                            <div class="filters-grid">
+                                <div class="filter-group">
+                                    <label>Min Drop %</label>
+                                    <input type="number" id="scanner-min-drop" value="10" min="1" max="80" step="1">
+                                </div>
+                                <div class="filter-group">
+                                    <label>Market</label>
+                                    <select id="scanner-market">
+                                        <option value="both">US + DE</option>
+                                        <option value="us">US Only</option>
+                                        <option value="de">DAX Only</option>
+                                    </select>
+                                </div>
+                                <div class="filter-group">
+                                    <label>Sector</label>
+                                    <select id="scanner-sector">
+                                        <option value="all">All Sectors</option>
+                                        <option value="tech">Technology</option>
+                                        <option value="finance">Finance</option>
+                                        <option value="health">Healthcare</option>
+                                        <option value="energy">Energy</option>
+                                        <option value="consumer">Consumer</option>
+                                        <option value="industrial">Industrial</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary" id="scanner-run-btn" onclick="runOpportunityScanner()">🔍 RUN SCANNER</button>
+                        </div>
+                        <div id="scanner-progress" style="display:none;margin:12px 0;font-size:12px;"></div>
+                        <div id="scanner-results" class="scanner-results-container"></div>
                     </div>
 
                     <!-- VIEW: WATCHLIST -->
@@ -566,7 +610,7 @@
         // F-key keyboard shortcuts
         document.addEventListener('keydown', function(e) {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
-            var map = { F1: 'analyzer', F2: 'portfolio', F3: 'screener', F4: 'watchlist' };
+            var map = { F1: 'analyzer', F2: 'portfolio', F3: 'screener', F4: 'watchlist', F5: 'scanner' };
             if (map[e.key]) {
                 e.preventDefault();
                 var nav = document.querySelector('.nav-item[data-view="' + map[e.key] + '"]');
@@ -585,6 +629,7 @@
     <script src="js/valuation.js?v=beff414"></script>
     <script src="js/risk-analysis.js?v=beff414"></script>
     <script src="js/portfolio.js?v=beff414"></script>
+    <script src="js/scanner.js?v=beff414"></script>
     <script src="js/price-chart.js?v=beff414"></script>
     <script src="js/app.js?v=beff414"></script>
 </body>
