@@ -1,636 +1,114 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>STOCK ANALYZER PRO — Terminal</title>
-    <link rel="stylesheet" href="css/styles.css?v=beff414">
+    <title>BLOOMBERG TERMINAL — Stock Analyzer Pro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/terminal.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
-    <div class="app-container">
-        <!-- Bloomberg Top Header -->
-        <div class="bloomberg-header">
-            <span class="bb-logo">STOCK ANALYZER PRO</span>
-            <span class="bb-info">EQUITY ANALYSIS TERMINAL</span>
-            <span class="bb-info" id="bb-date"></span>
-            <span class="bb-right" id="bb-clock"></span>
+    <div id="terminal-root">
+        <!-- Top Ticker Bar -->
+        <div id="ticker-bar" class="ticker-bar">
+            <div class="ticker-scroll" id="ticker-scroll"></div>
+        </div>
+
+        <!-- Command Bar -->
+        <div id="command-bar" class="command-bar">
+            <div class="command-bar-left">
+                <span class="bb-logo">BLOOMBERG</span>
+                <span class="bb-separator">|</span>
+                <span class="bb-label">STOCK ANALYZER PRO</span>
+            </div>
+            <div class="command-bar-center">
+                <div class="command-input-wrap">
+                    <input type="text" id="command-input" class="command-input" placeholder="Enter command: AAPL <GO> or DES, FA, GP, PORT, WL, SCAN, NEWS, MOST, HMAP..." spellcheck="false" autocomplete="off">
+                    <button id="go-btn" class="go-btn">GO</button>
+                </div>
+                <div id="autocomplete-dropdown" class="autocomplete-dropdown"></div>
+            </div>
+            <div class="command-bar-right">
+                <span id="bb-date" class="bb-info"></span>
+                <span id="bb-clock" class="bb-clock"></span>
+            </div>
         </div>
 
         <!-- Function Key Bar -->
-        <div class="fn-key-bar">
-            <div class="fn-key active" data-view="analyzer" onclick="document.querySelector('.nav-item[data-view=analyzer]').click()">
-                <span class="fn-label">F1</span><span class="fn-text">Analysis</span>
-            </div>
-            <div class="fn-key" data-view="portfolio" onclick="document.querySelector('.nav-item[data-view=portfolio]').click()">
-                <span class="fn-label">F2</span><span class="fn-text">Portfolio</span>
-            </div>
-            <div class="fn-key" data-view="screener" onclick="document.querySelector('.nav-item[data-view=screener]').click()">
-                <span class="fn-label">F3</span><span class="fn-text">Screener</span>
-            </div>
-            <div class="fn-key" data-view="watchlist" onclick="document.querySelector('.nav-item[data-view=watchlist]').click()">
-                <span class="fn-label">F4</span><span class="fn-text">Watchlist</span>
-            </div>
-            <div class="fn-key" data-view="scanner" onclick="document.querySelector('.nav-item[data-view=scanner]').click()">
-                <span class="fn-label">F5</span><span class="fn-text">Scanner</span>
-            </div>
-            <div class="fn-key" onclick="exportAnalysis && exportAnalysis()">
-                <span class="fn-label">F6</span><span class="fn-text">Export</span>
-            </div>
-            <div class="fn-key" onclick="addToPortfolio && addToPortfolio()">
-                <span class="fn-label">F7</span><span class="fn-text">Add Pos</span>
-            </div>
+        <div class="fn-bar">
+            <div class="fn-key" data-cmd="DES"><span class="fn-label">F1</span><span class="fn-text">DES</span></div>
+            <div class="fn-key" data-cmd="GP"><span class="fn-label">F2</span><span class="fn-text">GP</span></div>
+            <div class="fn-key" data-cmd="FA"><span class="fn-label">F3</span><span class="fn-text">FA</span></div>
+            <div class="fn-key" data-cmd="PORT"><span class="fn-label">F4</span><span class="fn-text">PORT</span></div>
+            <div class="fn-key" data-cmd="WL"><span class="fn-label">F5</span><span class="fn-text">WL</span></div>
+            <div class="fn-key" data-cmd="SCAN"><span class="fn-label">F6</span><span class="fn-text">SCAN</span></div>
+            <div class="fn-key" data-cmd="NEWS"><span class="fn-label">F7</span><span class="fn-text">NEWS</span></div>
+            <div class="fn-key" data-cmd="MOST"><span class="fn-label">F8</span><span class="fn-text">MOST</span></div>
+            <div class="fn-key" data-cmd="ALERTS"><span class="fn-label">F9</span><span class="fn-text">ALERTS</span></div>
+            <div class="fn-key" data-cmd="HMAP"><span class="fn-label">F10</span><span class="fn-text">HMAP</span></div>
+            <div class="fn-key" data-cmd="COMP"><span class="fn-label">F11</span><span class="fn-text">COMP</span></div>
+            <div class="fn-key" data-cmd="HELP"><span class="fn-label">F12</span><span class="fn-text">HELP</span></div>
         </div>
 
-        <!-- Main Layout -->
-        <div class="main-layout">
-            <!-- Sidebar -->
-            <aside class="sidebar">
-                <div class="logo">
-                    <div class="logo-icon">📈</div>
-                    <div class="logo-text">
-                        <h1>Stock Analyzer</h1>
-                        <span>Pro Terminal</span>
+        <!-- Panel Container -->
+        <div id="panel-container" class="panel-container">
+            <div class="panel active-panel" id="panel-1" data-panel="1">
+                <div class="panel-header">
+                    <div class="panel-tabs" id="panel-1-tabs">
+                        <span class="panel-tab active" data-view="home">HOME</span>
+                    </div>
+                    <div class="panel-controls">
+                        <button class="panel-btn" onclick="Panels.split()" title="Split panels">⊞</button>
+                        <button class="panel-btn" onclick="Panels.maximize(1)" title="Maximize">⬜</button>
                     </div>
                 </div>
-                
-                <nav class="nav-menu">
-                    <div class="nav-item active" data-view="analyzer">
-                        <span class="nav-icon">🔍</span>
-                        <span>Análisis</span>
-                    </div>
-                    <div class="nav-item" data-view="portfolio">
-                        <span class="nav-icon">💼</span>
-                        <span>Cartera</span>
-                        <span class="badge" id="portfolio-count">0</span>
-                    </div>
-                    <div class="nav-item" data-view="screener">
-                        <span class="nav-icon">📊</span>
-                        <span>Screener</span>
-                    </div>
-                    <div class="nav-item" data-view="watchlist">
-                        <span class="nav-icon">⭐</span>
-                        <span>Watchlist</span>
-                    </div>
-                    <div class="nav-item" data-view="scanner">
-                        <span class="nav-icon">🔍</span>
-                        <span>Scanner</span>
-                    </div>
-                </nav>
-                
-                <div class="sidebar-footer">
-                    <div class="market-status">
-                        <span class="status-dot"></span>
-                        <span id="market-status-text">Mercado Cerrado</span>
-                    </div>
-                </div>
-            </aside>
-
-            <!-- Main Content -->
-            <main class="main-content">
-                <!-- Header -->
-                <header class="header">
-                    <div class="search-bar">
-                        <input type="text" id="ticker-search" placeholder="ENTER TICKER (AAPL, TSLA, MSFT)...">
-                        <button class="btn-search" onclick="searchStock()">GO</button>
-                    </div>
-                    <div class="header-actions">
-                        <button class="btn btn-secondary" onclick="exportAnalysis()">EXPORT</button>
-                        <button class="btn btn-primary" onclick="addToPortfolio()">+ ADD POS</button>
-                    </div>
-                </header>
-
-                <!-- Views -->
-                <div id="app-views">
-                    <!-- VIEW: ANALYZER -->
-                    <div class="view active" id="view-analyzer">
-                        <div class="stock-header" id="stock-header">
-                            <div class="stock-info">
-                                <h2 id="stock-name">ENTER TICKER TO BEGIN ANALYSIS</h2>
-                                <span class="stock-ticker" id="stock-ticker"></span>
-                            </div>
-                            <div class="stock-price" id="stock-price-section" style="display: none;">
-                                <span class="current-price" id="current-price">--</span>
-                                <span class="price-change" id="price-change">--</span>
-                            </div>
-                        </div>
-
-                        <!-- Price Chart Section -->
-                        <div id="price-chart-section" class="price-chart-section" style="display: none;">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h3>📈 PRICE HISTORY</h3>
-                                    <div class="chart-range-buttons">
-                                        <button class="chart-range-btn active" data-range="1mo" onclick="changeChartRange('1mo')">1M</button>
-                                        <button class="chart-range-btn" data-range="3mo" onclick="changeChartRange('3mo')">3M</button>
-                                        <button class="chart-range-btn" data-range="6mo" onclick="changeChartRange('6mo')">6M</button>
-                                        <button class="chart-range-btn" data-range="1y" onclick="changeChartRange('1y')">1Y</button>
-                                        <button class="chart-range-btn" data-range="5y" onclick="changeChartRange('5y')">5Y</button>
-                                    </div>
-                                </div>
-                                <div class="chart-container" style="position: relative; height: 280px;">
-                                    <canvas id="price-chart-canvas"></canvas>
-                                </div>
-                                <div id="chart-status" class="chart-status"></div>
-                            </div>
-                        </div>
-
-                        <!-- FCF Deep Dive Section -->
-                        <div id="fcf-analysis-section" class="fcf-analysis-section" style="display: none;"></div>
-
-                        <div class="analysis-grid" id="analysis-content" style="display: none;">
-                            <!-- Valuation Summary Card -->
-                            <div class="card card-summary">
-                                <div class="card-header">
-                                    <h3>📊 VALUATION SUMMARY</h3>
-                                </div>
-                                <div class="valuation-result" id="valuation-summary">
-                                    <div class="fair-value">
-                                        <span class="label">Valor Intrínseco (Promedio)</span>
-                                        <span class="value" id="fair-value">$--</span>
-                                    </div>
-                                    <div class="current-vs-fair">
-                                        <div class="comparison">
-                                            <span>Precio Actual: <strong id="summary-current">$--</strong></span>
-                                            <span>Valor Justo: <strong id="summary-fair">$--</strong></span>
-                                        </div>
-                                        <div class="discount-badge" id="discount-badge">
-                                            --% Descuento
-                                        </div>
-                                    </div>
-                                    <div class="recommendation" id="recommendation">
-                                        Esperando análisis...
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- DCF Valuation -->
-                            <div class="card card-valuation">
-                                <div class="card-header">
-                                    <h3>💰 DCF VALUATION</h3>
-                                    <span class="method-badge">Descuento de Flujos</span>
-                                </div>
-                                <div class="valuation-inputs">
-                                    <div class="input-group">
-                                        <label>FCF Actual ($M)</label>
-                                        <input type="number" id="dcf-fcf" placeholder="Free Cash Flow">
-                                    </div>
-                                    <div class="input-group">
-                                        <label>Crecimiento (5 años) %</label>
-                                        <input type="number" id="dcf-growth" value="15" step="0.5">
-                                    </div>
-                                    <div class="input-group">
-                                        <label>Crecimiento Terminal %</label>
-                                        <input type="number" id="dcf-terminal" value="3" step="0.5">
-                                    </div>
-                                    <div class="input-group">
-                                        <label>WACC %</label>
-                                        <input type="number" id="dcf-wacc" value="10" step="0.5">
-                                    </div>
-                                    <div class="input-group">
-                                        <label>Acciones (M)</label>
-                                        <input type="number" id="dcf-shares" placeholder="Shares Outstanding">
-                                    </div>
-                                </div>
-                                <div class="valuation-output">
-                                    <div class="output-row">
-                                        <span>Valor por Acción:</span>
-                                        <strong id="dcf-value">$--</strong>
-                                    </div>
-                                    <div class="output-row">
-                                        <span>Upside/Downside:</span>
-                                        <strong id="dcf-upside" class="neutral">--%</strong>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Dividend Discount Model -->
-                            <div class="card card-valuation">
-                                <div class="card-header">
-                                    <h3>💵 GORDON MODEL (DDM)</h3>
-                                    <span class="method-badge">Descuento de Dividendos</span>
-                                </div>
-                                <div class="valuation-inputs">
-                                    <div class="input-group">
-                                        <label>Dividendo Anual ($)</label>
-                                        <input type="number" id="ddm-dividend" placeholder="Dividendo por acción">
-                                    </div>
-                                    <div class="input-group">
-                                        <label>Crecimiento Dividendo %</label>
-                                        <input type="number" id="ddm-growth" value="5" step="0.5">
-                                    </div>
-                                    <div class="input-group">
-                                        <label>Tasa Descuento (CAPM) %</label>
-                                        <input type="number" id="ddm-discount" value="10" step="0.5">
-                                    </div>
-                                </div>
-                                <div class="valuation-output">
-                                    <div class="output-row">
-                                        <span>Valor por Acción:</span>
-                                        <strong id="ddm-value">$--</strong>
-                                    </div>
-                                    <div class="output-row">
-                                        <span>Yield al Valor Justo:</span>
-                                        <strong id="ddm-yield">--%</strong>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Multiples Valuation -->
-                            <div class="card card-valuation">
-                                <div class="card-header">
-                                    <h3>📈 COMPARABLE MULTIPLES</h3>
-                                    <span class="method-badge">Análisis de Sector</span>
-                                </div>
-                                <div class="valuation-inputs">
-                                    <div class="input-group">
-                                        <label>EPS ($)</label>
-                                        <input type="number" id="mult-eps" placeholder="Earnings Per Share">
-                                    </div>
-                                    <div class="input-group">
-                                        <label>P/E Sector Promedio</label>
-                                        <input type="number" id="mult-pe" value="20" step="0.5">
-                                    </div>
-                                    <div class="input-group">
-                                        <label>Book Value por Acción ($)</label>
-                                        <input type="number" id="mult-bv" placeholder="Book Value">
-                                    </div>
-                                    <div class="input-group">
-                                        <label>P/B Sector Promedio</label>
-                                        <input type="number" id="mult-pb" value="3" step="0.1">
-                                    </div>
-                                </div>
-                                <div class="valuation-output">
-                                    <div class="output-row">
-                                        <span>Valor por P/E:</span>
-                                        <strong id="mult-pe-value">$--</strong>
-                                    </div>
-                                    <div class="output-row">
-                                        <span>Valor por P/B:</span>
-                                        <strong id="mult-pb-value">$--</strong>
-                                    </div>
-                                    <div class="output-row">
-                                        <span>Promedio:</span>
-                                        <strong id="mult-avg-value">$--</strong>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Advanced Valuations -->
-                            <div class="card card-valuation card-advanced">
-                                <div class="card-header">
-                                    <h3>🏦 RESIDUAL INCOME (RIM)</h3>
-                                    <span class="method-badge">Book Value + RI</span>
-                                </div>
-                                <div class="valuation-output">
-                                    <div class="output-row">
-                                        <span>Valor por Acción:</span>
-                                        <strong id="rim-value">$--</strong>
-                                    </div>
-                                    <div class="output-row">
-                                        <span>Book Value:</span>
-                                        <strong id="rim-book">$--</strong>
-                                    </div>
-                                    <div class="output-row">
-                                        <span>Residual Income:</span>
-                                        <strong id="rim-residual">$--</strong>
-                                    </div>
-                                    <div class="output-row">
-                                        <span>Cost of Equity:</span>
-                                        <strong id="rim-cost">--%</strong>
-                                    </div>
-                                    <div class="output-row">
-                                        <span>Upside/Downside:</span>
-                                        <strong id="rim-upside">--%</strong>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="card card-valuation card-advanced">
-                                <div class="card-header">
-                                    <h3>📐 ABNORMAL EARNINGS (AEG)</h3>
-                                    <span class="method-badge">Crecimiento Anormal</span>
-                                </div>
-                                <div class="valuation-output">
-                                    <div class="output-row">
-                                        <span>Valor por Acción:</span>
-                                        <strong id="aeg-value">$--</strong>
-                                    </div>
-                                    <div class="output-row">
-                                        <span>ROE:</span>
-                                        <strong id="aeg-roe">--%</strong>
-                                    </div>
-                                    <div class="output-row">
-                                        <span>Abnormal Growth:</span>
-                                        <strong id="aeg-growth">$--</strong>
-                                    </div>
-                                    <div class="output-row">
-                                        <span>Upside/Downside:</span>
-                                        <strong id="aeg-upside">--%</strong>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="card card-valuation card-advanced">
-                                <div class="card-header">
-                                    <h3>⚡ EVA (Economic Value Added)</h3>
-                                    <span class="method-badge">Valor Económico</span>
-                                </div>
-                                <div class="valuation-output">
-                                    <div class="output-row">
-                                        <span>Valor por Acción:</span>
-                                        <strong id="eva-value">$--</strong>
-                                    </div>
-                                    <div class="output-row">
-                                        <span>NOPAT:</span>
-                                        <strong id="eva-nopat">--</strong>
-                                    </div>
-                                    <div class="output-row">
-                                        <span>WACC:</span>
-                                        <strong id="eva-wacc">--%</strong>
-                                    </div>
-                                    <div class="output-row">
-                                        <span>EVA:</span>
-                                        <strong id="eva-amount">--</strong>
-                                    </div>
-                                    <div class="output-row">
-                                        <span>Upside/Downside:</span>
-                                        <strong id="eva-upside">--%</strong>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Risk Analysis -->
-                            <div class="card card-risk">
-                                <div class="card-header">
-                                    <h3>⚠️ RISK ANALYSIS</h3>
-                                </div>
-                                <div class="risk-grid">
-                                    <div class="risk-item">
-                                        <span class="risk-label">Ratio Sharpe</span>
-                                        <span class="risk-value" id="risk-sharpe">--</span>
-                                        <span class="risk-desc">Rendimiento ajustado por riesgo</span>
-                                    </div>
-                                    <div class="risk-item">
-                                        <span class="risk-label">Beta (β)</span>
-                                        <span class="risk-value" id="risk-beta">--</span>
-                                        <span class="risk-desc">Sensibilidad al mercado</span>
-                                    </div>
-                                    <div class="risk-item">
-                                        <span class="risk-label">Volatilidad (σ)</span>
-                                        <span class="risk-value" id="risk-volatility">--%</span>
-                                        <span class="risk-desc">Desviación estándar anual</span>
-                                    </div>
-                                    <div class="risk-item">
-                                        <span class="risk-label">Margen de Seguridad</span>
-                                        <span class="risk-value" id="risk-margin">--%</span>
-                                        <span class="risk-desc">Descuento vs valor intrínseco</span>
-                                    </div>
-                                </div>
-                                
-                                <div class="risk-assessment" id="risk-assessment">
-                                    Completa las valoraciones para ver el análisis de riesgo
-                                </div>
-                            </div>
-
-                            <!-- Sensitivity Analysis -->
-                            <div class="card card-sensitivity">
-                                <div class="card-header">
-                                    <h3>🎯 SENSITIVITY ANALYSIS</h3>
-                                </div>
-                                <div class="sensitivity-table" id="sensitivity-table">
-                                    <p class="placeholder-text">Calcula el DCF primero para ver el análisis de sensibilidad</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- VIEW: PORTFOLIO -->
-                    <div class="view" id="view-portfolio">
-                        <div class="portfolio-header">
-                            <h2>💼 PORTFOLIO</h2>
-                            <div class="portfolio-summary">
-                                <div class="summary-item">
-                                    <span class="label">Valor Total</span>
-                                    <span class="value" id="portfolio-total">$0.00</span>
-                                </div>
-                                <div class="summary-item">
-                                    <span class="label">Ganancia/Pérdida</span>
-                                    <span class="value" id="portfolio-pnl">$0.00</span>
-                                </div>
-                                <div class="summary-item">
-                                    <span class="label">Rentabilidad</span>
-                                    <span class="value" id="portfolio-return">0.00%</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="portfolio-table-container">
-                            <table class="portfolio-table" id="portfolio-table">
-                                <thead>
-                                    <tr>
-                                        <th>Ticker</th>
-                                        <th>Name</th>
-                                        <th>Shares</th>
-                                        <th>Avg Entry</th>
-                                        <th>Current</th>
-                                        <th>Value</th>
-                                        <th>P&L</th>
-                                        <th>P&L%</th>
-                                        <th>Fair Value</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="portfolio-tbody">
-                                    <tr class="empty-row">
-                                        <td colspan="10">Tu cartera está vacía. Agrega acciones desde el análisis.</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        
-                        <div class="portfolio-allocation" id="portfolio-allocation">
-                            <h3>SECTOR ALLOCATION</h3>
-                            <div class="allocation-chart" id="allocation-chart">
-                                <p class="placeholder-text">Agrega posiciones para ver la asignación</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- VIEW: SCREENER -->
-                    <div class="view" id="view-screener">
-                        <div class="screener-filters">
-                            <h2>📊 STOCK SCREENER</h2>
-                            <div class="filters-grid">
-                                <div class="filter-group">
-                                    <label>Mercado</label>
-                                    <select id="filter-market">
-                                        <option value="all">Todos</option>
-                                        <option value="us">Estados Unidos</option>
-                                        <option value="eu">Europa</option>
-                                        <option value="latam">Latinoamérica</option>
-                                    </select>
-                                </div>
-                                <div class="filter-group">
-                                    <label>Sector</label>
-                                    <select id="filter-sector">
-                                        <option value="all">Todos</option>
-                                        <option value="tech">Tecnología</option>
-                                        <option value="finance">Finanzas</option>
-                                        <option value="health">Salud</option>
-                                        <option value="energy">Energía</option>
-                                        <option value="consumer">Consumo</option>
-                                    </select>
-                                </div>
-                                <div class="filter-group">
-                                    <label>P/E Máximo</label>
-                                    <input type="number" id="filter-pe" placeholder="Ej: 25">
-                                </div>
-                                <div class="filter-group">
-                                    <label>Dividendo Mínimo %</label>
-                                    <input type="number" id="filter-dividend" placeholder="Ej: 2">
-                                </div>
-                                <div class="filter-group">
-                                    <label>Descuento DCF Mínimo %</label>
-                                    <input type="number" id="filter-discount" placeholder="Ej: 20">
-                                </div>
-                            </div>
-                            
-                            <button class="btn btn-primary" onclick="runScreener()">🔍 EXECUTE SCREENER</button>
-                        </div>
-                        
-                        <div class="screener-results" id="screener-results">
-                            <p class="placeholder-text">Configura los filtros y ejecuta el screener</p>
-                        </div>
-                    </div>
-
-                    <!-- VIEW: SCANNER (Opportunity Scanner) -->
-                    <div class="view" id="view-scanner">
-                        <div class="screener-filters">
-                            <h2>🔍 OPPORTUNITY SCANNER</h2>
-                            <p style="color:var(--gray);margin-bottom:12px;font-size:12px;">Scan for stocks that dropped significantly but have strong fundamentals — buy the dip opportunities.</p>
-                            <div class="filters-grid">
-                                <div class="filter-group">
-                                    <label>Min Drop %</label>
-                                    <input type="number" id="scanner-min-drop" value="10" min="1" max="80" step="1">
-                                </div>
-                                <div class="filter-group">
-                                    <label>Market</label>
-                                    <select id="scanner-market">
-                                        <option value="both">US + DE</option>
-                                        <option value="us">US Only</option>
-                                        <option value="de">DAX Only</option>
-                                    </select>
-                                </div>
-                                <div class="filter-group">
-                                    <label>Sector</label>
-                                    <select id="scanner-sector">
-                                        <option value="all">All Sectors</option>
-                                        <option value="tech">Technology</option>
-                                        <option value="finance">Finance</option>
-                                        <option value="health">Healthcare</option>
-                                        <option value="energy">Energy</option>
-                                        <option value="consumer">Consumer</option>
-                                        <option value="industrial">Industrial</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <button class="btn btn-primary" id="scanner-run-btn" onclick="runOpportunityScanner()">🔍 RUN SCANNER</button>
-                        </div>
-                        <div id="scanner-progress" style="display:none;margin:12px 0;font-size:12px;"></div>
-                        <div id="scanner-results" class="scanner-results-container"></div>
-                    </div>
-
-                    <!-- VIEW: WATCHLIST -->
-                    <div class="view" id="view-watchlist">
-                        <div class="watchlist-header">
-                            <h2>⭐ WATCHLIST</h2>
-                            <div class="search-bar small">
-                                <input type="text" id="watchlist-add" placeholder="ADD TICKER...">
-                                <button onclick="addToWatchlist()">+</button>
-                            </div>
-                        </div>
-                        
-                        <div class="watchlist-grid" id="watchlist-grid">
-                            <div class="empty-state">
-                                <span class="icon">⭐</span>
-                                <p>WATCHLIST EMPTY</p>
-                                <span>Add tickers to track</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </main>
+                <div class="panel-content" id="panel-1-content"></div>
+            </div>
         </div>
 
         <!-- Status Bar -->
         <div class="status-bar">
             <div class="status-left">
-                <span class="status-green">● CONNECTED</span>
-                <span>STOCK ANALYZER PRO v2.0</span>
-                <span id="status-market">NYSE/NASDAQ</span>
+                <span class="status-indicator" id="status-connection">● CONNECTED</span>
+                <span class="status-sep">|</span>
+                <span id="status-market-state">MARKET CLOSED</span>
+                <span class="status-sep">|</span>
+                <span id="status-active-ticker">NO SECURITY</span>
+            </div>
+            <div class="status-center">
+                <span id="status-alerts-count">0 ALERTS</span>
+                <span class="status-sep">|</span>
+                <span id="status-last-update">--</span>
             </div>
             <div class="status-right">
-                <span id="status-time"></span>
+                <span>PANELS: <span id="status-panel-count">1</span></span>
+                <span class="status-sep">|</span>
+                <span id="status-version">SAP v3.0</span>
+                <span class="status-sep">|</span>
+                <span id="status-clock"></span>
             </div>
         </div>
     </div>
 
-    <!-- Bloomberg clock/date script -->
-    <script>
-    (function() {
-        function updateClock() {
-            const now = new Date();
-            const time = now.toLocaleTimeString('en-US', { hour12: false });
-            const date = now.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }).toUpperCase();
-            const el1 = document.getElementById('bb-clock');
-            const el2 = document.getElementById('bb-date');
-            const el3 = document.getElementById('status-time');
-            if (el1) el1.textContent = time;
-            if (el2) el2.textContent = date;
-            if (el3) el3.textContent = time;
-        }
-        updateClock();
-        setInterval(updateClock, 1000);
-
-        // Sync fn-key active state with nav
-        const observer = new MutationObserver(function() {
-            document.querySelectorAll('.fn-key[data-view]').forEach(function(fk) {
-                const view = fk.getAttribute('data-view');
-                const navItem = document.querySelector('.nav-item[data-view="' + view + '"]');
-                fk.classList.toggle('active', navItem && navItem.classList.contains('active'));
-            });
-        });
-        setTimeout(function() {
-            document.querySelectorAll('.nav-item').forEach(function(ni) {
-                observer.observe(ni, { attributes: true, attributeFilter: ['class'] });
-            });
-        }, 500);
-
-        // F-key keyboard shortcuts
-        document.addEventListener('keydown', function(e) {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
-            var map = { F1: 'analyzer', F2: 'portfolio', F3: 'screener', F4: 'watchlist', F5: 'scanner' };
-            if (map[e.key]) {
-                e.preventDefault();
-                var nav = document.querySelector('.nav-item[data-view="' + map[e.key] + '"]');
-                if (nav) nav.click();
-            }
-        });
-    })();
-    </script>
-
     <!-- Scripts -->
-    <script src="js/yahoo-proxy.js?v=beff414"></script>
-    <script src="js/data-fetcher.js?v=beff414"></script>
-    <script src="js/fcf-analysis.js?v=beff414"></script>
-    <script src="js/advanced-valuation.js?v=beff414"></script>
-    <script src="js/auto-valuation.js?v=beff414"></script>
-    <script src="js/valuation.js?v=beff414"></script>
-    <script src="js/risk-analysis.js?v=beff414"></script>
-    <script src="js/portfolio.js?v=beff414"></script>
-    <script src="js/scanner.js?v=beff414"></script>
-    <script src="js/price-chart.js?v=beff414"></script>
-    <script src="js/app.js?v=beff414"></script>
+    <script src="js/yahoo-proxy.js"></script>
+    <script src="js/data-fetcher.js"></script>
+    <script src="js/data-service.js"></script>
+    <script src="js/ticker-bar.js"></script>
+    <script src="js/command-bar.js"></script>
+    <script src="js/panels.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/heatmap.js"></script>
+    <script src="js/news.js"></script>
+    <script src="js/watchlist.js"></script>
+    <script src="js/portfolio-terminal.js"></script>
+    <script src="js/screener.js"></script>
+    <script src="js/security.js"></script>
+    <script src="js/financials.js"></script>
+    <script src="js/alerts.js"></script>
+    <script src="js/terminal.js"></script>
 </body>
 </html>
