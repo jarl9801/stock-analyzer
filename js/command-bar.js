@@ -22,6 +22,11 @@ const CommandBar = (() => {
         'ERN': 'Earnings',
         'RV': 'Relative Value',
         'SPLC': 'Supply Chain',
+        'GAIN': 'Top Gainers',
+        'DROP': 'Top Losers',
+        'HIGH': '52W Highs',
+        'LOW': '52W Lows',
+        'ALRT': 'Alerts Manager',
         'ALERTS': 'Alerts Manager',
         'HELP': 'Help / Commands',
         'HOME': 'Home Screen',
@@ -179,7 +184,7 @@ const CommandBar = (() => {
         const parts = cmd.split(/\s+/);
 
         // Standalone commands (no ticker needed)
-        const standaloneCommands = ['PORT','WL','SCAN','MOST','NEWS','HMAP','COMP','ALERTS','HELP','HOME'];
+        const standaloneCommands = ['PORT','WL','SCAN','MOST','GAIN','DROP','HIGH','LOW','NEWS','HMAP','COMP','ALERTS','ALRT','HELP','HOME'];
         if (parts.length === 1 && standaloneCommands.includes(parts[0])) {
             return routeCommand(null, parts[0]);
         }
@@ -227,6 +232,11 @@ const CommandBar = (() => {
             case 'WL': Watchlist.render(panelContent); break;
             case 'SCAN': Screener.render(panelContent); break;
             case 'MOST': Screener.render(panelContent, 'most-active'); break;
+            case 'GAIN': Screener.render(panelContent, 'gainers'); break;
+            case 'DROP': Screener.render(panelContent, 'losers'); break;
+            case 'HIGH': Screener.render(panelContent, '52w-high'); break;
+            case 'LOW': Screener.render(panelContent, '52w-low'); break;
+            case 'ALRT': Alerts.render(panelContent); break;
             case 'NEWS': News.render(panelContent, ticker); break;
             case 'HMAP': Heatmap.render(panelContent); break;
             case 'COMP': Compare.render(panelContent, ticker); break;
