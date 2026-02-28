@@ -1294,3 +1294,120 @@ input[type="text"], input[type="number"], select {
 input[type="text"]:focus, input[type="number"]:focus, select:focus {
     border-color: var(--amber);
 }
+
+/* ============================================
+   PHASE 3 — Advanced Charts & Polish CSS
+   ============================================ */
+
+/* ---- Enhanced GP View ---- */
+.gp-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+.gp-header-left { display:flex; align-items:center; gap:8px; }
+.gp-header-right { display:flex; gap:4px; }
+.gp-ticker-name { font-size:14px; color:var(--white); font-weight:700; }
+.gp-price-info { font-size:12px; color:var(--gray-light); }
+
+.gp-controls-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+
+/* Overlay pills */
+.overlay-pill, .ind-pill {
+    display:inline-flex; align-items:center; gap:3px;
+    font-size:10px; color:var(--gray-light); cursor:pointer;
+    padding:2px 6px; border:1px solid var(--border); border-radius:2px;
+    margin-right:4px; margin-bottom:2px;
+    transition: border-color 0.15s;
+}
+.overlay-pill:hover, .ind-pill:hover { border-color:var(--gray); }
+.overlay-pill input:checked ~ *, .ind-pill input:checked ~ * { color:var(--white); }
+.overlay-pill input, .ind-pill input { accent-color:var(--amber); width:10px; height:10px; }
+.pill-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+
+/* Main chart area with drawing tools */
+.gp-main-area { display:flex; gap:0; margin:4px 0; }
+.gp-chart-container { flex:1; position:relative; min-height:300px; }
+.gp-chart { width:100%; height:100%; min-height:300px; background:var(--bg-card); border:1px solid var(--border); }
+
+/* Crosshair info overlay */
+.gp-crosshair-info {
+    display:none; position:absolute; top:4px; left:40px; z-index:5;
+    gap:12px; font-size:10px; color:var(--gray-light);
+    background:rgba(0,0,0,0.7); padding:2px 8px; border-radius:2px;
+    pointer-events:none;
+}
+
+/* Drawing tools sidebar */
+.gp-drawing-tools {
+    display:flex; flex-direction:column; gap:2px;
+    background:var(--bg-card); border:1px solid var(--border); border-right:none;
+    padding:4px 2px; flex-shrink:0;
+}
+.draw-btn {
+    width:28px; height:28px; display:flex; align-items:center; justify-content:center;
+    background:none; border:1px solid transparent; color:var(--gray-light);
+    font-size:14px; cursor:pointer; border-radius:2px;
+    transition: all 0.1s;
+}
+.draw-btn:hover { color:var(--white); border-color:var(--border-light); background:var(--bg-hover); }
+.draw-btn.active { color:var(--amber); border-color:var(--amber); background:rgba(255,170,0,0.1); }
+.draw-clear { color:var(--red); }
+.draw-clear:hover { color:var(--red); border-color:var(--red); }
+.draw-sep { height:1px; background:var(--border); margin:4px 2px; }
+
+/* Indicator panels */
+.gp-indicator-controls { display:flex; gap:4px; padding:4px 0; flex-wrap:wrap; }
+.gp-ind-panel { margin-top:4px; background:var(--bg-card); border:1px solid var(--border); }
+.gp-ind-label {
+    font-size:9px; color:var(--amber); padding:2px 6px;
+    border-bottom:1px solid var(--border); font-family:var(--font-ui);
+    letter-spacing:0.5px;
+}
+.gp-ind-chart { width:100%; }
+
+/* Compare bar */
+.gp-compare-bar { display:flex; align-items:center; gap:8px; margin-top:8px; padding-top:8px; border-top:1px solid var(--border); }
+.gp-compare-input {
+    background:var(--bg-input); border:1px solid var(--border); color:var(--white);
+    font-family:var(--font-mono); font-size:11px; padding:3px 8px; width:120px;
+    text-transform:uppercase;
+}
+.gp-compare-input:focus { border-color:var(--amber); }
+.compare-tag { font-size:10px; padding:2px 6px; border:1px solid var(--border); margin-left:4px; border-radius:2px; }
+.compare-tag-x { cursor:pointer; margin-left:4px; opacity:0.6; }
+.compare-tag-x:hover { opacity:1; }
+
+/* Fullscreen mode */
+.gp-fullscreen {
+    position:fixed !important; top:0; left:0; right:0; bottom:0;
+    z-index:9998; background:var(--bg-primary); padding:8px;
+    overflow-y:auto;
+}
+
+/* ---- Context Menu ---- */
+.bb-context-menu {
+    position:fixed; background:#111; border:1px solid var(--border-light);
+    z-index:10000; min-width:200px; padding:4px 0;
+    font-family:var(--font-mono); font-size:11px;
+    box-shadow:0 4px 12px rgba(0,0,0,0.5);
+}
+.bb-ctx-header {
+    padding:6px 12px; color:var(--amber); font-weight:700;
+    border-bottom:1px solid var(--border); font-size:12px;
+}
+.bb-ctx-item { padding:5px 12px; cursor:pointer; color:var(--white); transition:background 0.1s; }
+.bb-ctx-item:hover { background:var(--bg-hover); color:var(--amber); }
+.bb-ctx-sep { height:1px; background:var(--border); margin:4px 0; }
+
+/* ---- Enhanced Home Grid ---- */
+.home-grid-v2 {
+    display:grid;
+    grid-template-columns:2fr 1fr 1fr 1fr;
+    gap:8px; height:100%;
+}
+.mover-item {
+    display:flex; justify-content:space-between; align-items:center;
+    padding:3px 6px; font-size:11px; border-bottom:1px solid var(--border);
+    cursor:pointer; transition:background 0.1s;
+}
+.mover-item:hover { background:var(--bg-hover); }
+
+/* ---- Compare View Presets ---- */
+.comp-presets { display:flex; gap:4px; flex-wrap:wrap; }

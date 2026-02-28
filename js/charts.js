@@ -1,474 +1,390 @@
 // ============================================
-// CHARTS.JS — Advanced charting with lightweight-charts
+// CHARTS.JS — Advanced Bloomberg charting system
+// Phase 3 — Complete rewrite with lightweight-charts
 // ============================================
 
 const Charts = (() => {
     const instances = new Map();
+    const COLORS = {
+        sma20: '#4488ff', sma50: '#ffaa00', sma200: '#ff4444',
+        ema12: '#00cccc', ema26: '#e879f9',
+        bbUpper: 'rgba(100,149,237,0.5)', bbLower: 'rgba(100,149,237,0.5)',
+        vwap: '#a855f7',
+        compare: ['#ffaa00','#4488ff','#22c55e','#ff4444','#9b59b6','#00cccc','#e879f9','#f97316']
+    };
+    const TF_DAYS = { '1D':1, '5D':5, '1M':22, '3M':66, '6M':132, 'YTD':null, '1Y':252, '5Y':1260, 'MAX':2520 };
+
+    function getPrefs() { try { return JSON.parse(localStorage.getItem('bb_chart_prefs') || '{}'); } catch { return {}; } }
+    function savePrefs(p) { localStorage.setItem('bb_chart_prefs', JSON.stringify(p)); }
+    function savePref(k,v) { const p = getPrefs(); p[k]=v; savePrefs(p); }
+
+    function getTFDays(tf) {
+        if (tf === 'YTD') { const n=new Date(); return Math.ceil((n - new Date(n.getFullYear(),0,1))/86400000); }
+        return TF_DAYS[tf] || 252;
+    }
 
     function render(container, ticker) {
         if (!ticker) { container.innerHTML = '<div class="empty-state"><span class="icon">📈</span><p>Enter a ticker to view chart</p></div>'; return; }
+        const prefs = getPrefs();
+        const defaultTF = prefs.timeframe || '1Y';
+        const defaultType = prefs.chartType || 'candlestick';
+        const defaultOverlays = prefs.overlays || [];
+        const defaultInds = prefs.indicators || ['volume'];
 
         container.innerHTML = `
-            <div class="gp-view">
+            <div class="gp-view" id="gp-root">
                 <div class="gp-header">
-                    <div>
-                        <h2 class="gp-ticker-name" style="display:inline">${ticker}</h2>
-                        <span class="gp-price-info">Loading...</span>
+                    <div class="gp-header-left">
+                        <span class="gp-ticker-name">${ticker}</span>
+                        <span class="gp-price-info" id="gp-price-info">Loading...</span>
                     </div>
-                    <div class="gp-controls">
-                        <div class="gp-timeframes">
-                            ${['1D','5D','1M','3M','6M','1Y','5Y','MAX'].map(tf =>
-                                `<button class="tf-btn${tf==='1Y'?' active':''}" data-tf="${tf}">${tf}</button>`
-                            ).join('')}
-                        </div>
-                        <div class="gp-chart-type">
-                            <button class="ct-btn active" data-type="candlestick" title="Candlestick">🕯</button>
-                            <button class="ct-btn" data-type="line" title="Line">📈</button>
-                            <button class="ct-btn" data-type="area" title="Area">▦</button>
-                        </div>
+                    <div class="gp-header-right">
+                        <button class="btn-terminal btn-sm" id="gp-fullscreen-btn" title="Fullscreen">⬜</button>
+                        <button class="btn-terminal btn-sm" id="gp-compare-btn" title="Compare">COMP</button>
+                    </div>
+                </div>
+                <div class="gp-controls-row">
+                    <div class="gp-timeframes">
+                        ${['1D','5D','1M','3M','6M','YTD','1Y','5Y','MAX'].map(tf =>
+                            '<button class="tf-btn'+(tf===defaultTF?' active':'')+'" data-tf="'+tf+'">'+tf+'</button>'
+                        ).join('')}
+                    </div>
+                    <div class="gp-chart-type">
+                        ${[['candlestick','🕯'],['line','📈'],['area','▦'],['bar','▥']].map(([t,icon]) =>
+                            '<button class="ct-btn'+(t===defaultType?' active':'')+'" data-type="'+t+'" title="'+t+'">'+icon+'</button>'
+                        ).join('')}
                     </div>
                 </div>
                 <div class="gp-overlays">
-                    <label><input type="checkbox" data-overlay="sma20"> SMA20</label>
-                    <label><input type="checkbox" data-overlay="sma50"> SMA50</label>
-                    <label><input type="checkbox" data-overlay="sma200"> SMA200</label>
-                    <label><input type="checkbox" data-overlay="ema20"> EMA20</label>
-                    <label><input type="checkbox" data-overlay="bb"> Bollinger</label>
+                    ${[['sma20','SMA 20','#4488ff'],['sma50','SMA 50','#ffaa00'],['sma200','SMA 200','#ff4444'],
+                       ['ema12','EMA 12','#00cccc'],['ema26','EMA 26','#e879f9'],
+                       ['bb','Bollinger','#6495ed'],['vwap','VWAP','#a855f7']
+                    ].map(([id,label,color]) =>
+                        '<label class="overlay-pill"><input type="checkbox" data-overlay="'+id+'" '+(defaultOverlays.includes(id)?'checked':'')+'><span class="pill-dot" style="background:'+color+'"></span>'+label+'</label>'
+                    ).join('')}
                 </div>
-                <div class="gp-chart-wrap">
-                    <div class="gp-chart" id="gp-main-chart"></div>
-                </div>
-                <div class="gp-indicators">
-                    <div class="gp-indicator-controls">
-                        <label><input type="checkbox" data-ind="volume" checked> Volume</label>
-                        <label><input type="checkbox" data-ind="rsi"> RSI</label>
-                        <label><input type="checkbox" data-ind="macd"> MACD</label>
+                <div class="gp-main-area">
+                    <div class="gp-drawing-tools" id="gp-drawing-tools">
+                        <button class="draw-btn" data-tool="trendline" title="Trendline">╱</button>
+                        <button class="draw-btn" data-tool="hline" title="Horizontal Line">─</button>
+                        <button class="draw-btn" data-tool="fib" title="Fibonacci">⊿</button>
+                        <button class="draw-btn" data-tool="rect" title="Rectangle">▭</button>
+                        <button class="draw-btn" data-tool="text" title="Text">T</button>
+                        <div class="draw-sep"></div>
+                        <button class="draw-btn draw-clear" data-tool="clear" title="Clear All">✕</button>
                     </div>
-                    <div class="gp-indicator-charts" id="gp-indicator-area"></div>
+                    <div class="gp-chart-container">
+                        <div class="gp-chart" id="gp-main-chart"></div>
+                        <div class="gp-crosshair-info" id="gp-crosshair-info"></div>
+                    </div>
+                </div>
+                <div class="gp-indicator-controls">
+                    ${[['volume','VOL',true],['rsi','RSI(14)',false],['macd','MACD',false],['stoch','STOCH',false]].map(([id,label,def]) =>
+                        '<label class="ind-pill"><input type="checkbox" data-ind="'+id+'" '+(defaultInds.includes(id)||def?'checked':'')+'> '+label+'</label>'
+                    ).join('')}
+                </div>
+                <div class="gp-indicator-charts" id="gp-indicator-area"></div>
+                <div class="gp-compare-bar" id="gp-compare-bar" style="display:none;">
+                    <span style="color:var(--gray-light);font-size:10px;">COMPARE:</span>
+                    <input type="text" class="gp-compare-input" id="gp-compare-input" placeholder="Add ticker...">
+                    <div class="gp-compare-tags" id="gp-compare-tags"></div>
                 </div>
             </div>`;
 
-        // Load data and create chart
-        const ohlcv = DataService.generateOHLCV(ticker, 365);
-        createChart(container, ticker, ohlcv, '1Y', 'candlestick');
+        const state = {
+            ticker, chartType: defaultType, timeframe: defaultTF,
+            ohlcv: null, chart: null, mainSeries: null,
+            overlays: [], compareSeries: [], compareSymbols: [],
+            indicatorCharts: [], activeTool: null, isFullscreen: false
+        };
 
-        // Update price info
+        state.ohlcv = DataService.generateOHLCV(ticker, getTFDays(defaultTF));
+        buildMainChart(container, state);
+
         DataService.getQuote(ticker).then(data => {
-            const info = container.querySelector('.gp-price-info');
+            const info = container.querySelector('#gp-price-info');
             if (info && data) {
-                const cls = (data.change || 0) >= 0 ? 'positive' : 'negative';
-                info.innerHTML = `<span style="font-size:16px;font-weight:600">$${data.price.toFixed(2)}</span> <span class="${cls}">${(data.change||0) >= 0 ? '▲' : '▼'} ${Math.abs(data.change||0).toFixed(2)} (${Math.abs(data.changePercent||0).toFixed(2)}%)</span>`;
+                const cls = (data.change||0) >= 0 ? 'positive' : 'negative';
+                const arrow = (data.change||0) >= 0 ? '▲' : '▼';
+                info.innerHTML = '<span style="font-size:16px;font-weight:700;color:var(--white)">$'+data.price.toFixed(2)+'</span> <span class="'+cls+'">'+arrow+' '+Math.abs(data.change||0).toFixed(2)+' ('+Math.abs(data.changePercent||0).toFixed(2)+'%)</span>';
             }
         });
 
-        // Timeframe buttons
         container.querySelectorAll('.tf-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 container.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                const days = { '1D': 1, '5D': 5, '1M': 22, '3M': 66, '6M': 132, '1Y': 252, '5Y': 1260, 'MAX': 2520 }[btn.dataset.tf] || 252;
-                const newData = DataService.generateOHLCV(ticker, days);
-                createChart(container, ticker, newData, btn.dataset.tf, getActiveChartType(container));
+                state.timeframe = btn.dataset.tf;
+                state.ohlcv = DataService.generateOHLCV(ticker, getTFDays(btn.dataset.tf));
+                buildMainChart(container, state);
+                buildIndicators(container, state);
+                savePref('timeframe', state.timeframe);
             });
         });
 
-        // Chart type buttons
         container.querySelectorAll('.ct-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 container.querySelectorAll('.ct-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                createChart(container, ticker, ohlcv, '1Y', btn.dataset.type);
+                state.chartType = btn.dataset.type;
+                buildMainChart(container, state);
+                savePref('chartType', state.chartType);
             });
         });
 
-        // Overlay checkboxes
         container.querySelectorAll('[data-overlay]').forEach(cb => {
-            cb.addEventListener('change', () => updateOverlays(container, ticker, ohlcv));
+            cb.addEventListener('change', () => {
+                applyOverlays(container, state);
+                savePref('overlays', [...container.querySelectorAll('[data-overlay]:checked')].map(c=>c.dataset.overlay));
+            });
         });
 
-        // Indicator checkboxes
         container.querySelectorAll('[data-ind]').forEach(cb => {
-            cb.addEventListener('change', () => updateIndicators(container, ticker, ohlcv));
+            cb.addEventListener('change', () => {
+                buildIndicators(container, state);
+                savePref('indicators', [...container.querySelectorAll('[data-ind]:checked')].map(c=>c.dataset.ind));
+            });
         });
 
-        // Initial indicators
-        updateIndicators(container, ticker, ohlcv);
+        container.querySelector('#gp-fullscreen-btn').addEventListener('click', () => toggleFullscreen(container, state));
+        container.querySelector('#gp-main-chart').addEventListener('dblclick', () => toggleFullscreen(container, state));
+
+        container.querySelector('#gp-compare-btn').addEventListener('click', () => {
+            const bar = container.querySelector('#gp-compare-bar');
+            bar.style.display = bar.style.display === 'none' ? 'flex' : 'none';
+        });
+
+        const compInput = container.querySelector('#gp-compare-input');
+        compInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const sym = compInput.value.trim().toUpperCase();
+                if (sym && !state.compareSymbols.includes(sym) && sym !== ticker) {
+                    state.compareSymbols.push(sym);
+                    addCompareOverlay(state, sym);
+                    compInput.value = '';
+                    updateCompareTags(container, state);
+                }
+            }
+        });
+
+        container.querySelectorAll('.draw-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (btn.dataset.tool === 'clear') {
+                    container.querySelectorAll('.draw-btn').forEach(b => b.classList.remove('active'));
+                    state.activeTool = null;
+                    Terminal.notify('Drawings cleared', 'info');
+                    return;
+                }
+                container.querySelectorAll('.draw-btn').forEach(b => b.classList.remove('active'));
+                if (state.activeTool === btn.dataset.tool) { state.activeTool = null; }
+                else { state.activeTool = btn.dataset.tool; btn.classList.add('active'); }
+            });
+        });
+
+        buildIndicators(container, state);
+        instances.set(ticker, state);
     }
 
-    function getActiveChartType(container) {
-        const active = container.querySelector('.ct-btn.active');
-        return active ? active.dataset.type : 'candlestick';
-    }
-
-    function createChart(container, ticker, data, timeframe, chartType) {
-        const chartEl = container.querySelector('#gp-main-chart') || container.querySelector('.gp-chart');
-        if (!chartEl) return;
-
+    function buildMainChart(container, state) {
+        const chartEl = container.querySelector('#gp-main-chart');
+        if (!chartEl || typeof LightweightCharts === 'undefined') return;
         chartEl.innerHTML = '';
-
-        if (typeof LightweightCharts === 'undefined') {
-            chartEl.innerHTML = '<div class="empty-state"><p>Chart library not loaded</p></div>';
-            return;
-        }
-
+        const height = Math.max(300, Math.floor(chartEl.parentElement.clientHeight) || 400);
         const chart = LightweightCharts.createChart(chartEl, {
-            width: chartEl.clientWidth,
-            height: 400,
-            layout: { background: { color: '#1a1a1a' }, textColor: '#888' },
-            grid: { vertLines: { color: '#222' }, horzLines: { color: '#222' } },
-            crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-            rightPriceScale: { borderColor: '#333' },
-            timeScale: { borderColor: '#333', timeVisible: timeframe === '1D' },
+            width: chartEl.clientWidth, height: height,
+            layout: { background: { color: '#0a0a0a' }, textColor: '#666', fontFamily: "'JetBrains Mono', monospace", fontSize: 10 },
+            grid: { vertLines: { color: '#161616' }, horzLines: { color: '#161616' } },
+            crosshair: { mode: LightweightCharts.CrosshairMode.Normal, vertLine: { color: '#ffaa0044', width: 1 }, horzLine: { color: '#ffaa0044', width: 1 } },
+            rightPriceScale: { borderColor: '#222', scaleMargins: { top: 0.05, bottom: 0.05 } },
+            timeScale: { borderColor: '#222', timeVisible: state.timeframe==='1D'||state.timeframe==='5D' },
+            handleScroll: { mouseWheel: true, pressedMouseMove: true },
+            handleScale: { axisPressedMouseMove: true, mouseWheel: true, pinch: true },
         });
 
         let series;
-        if (chartType === 'candlestick') {
-            series = chart.addCandlestickSeries({
-                upColor: '#22c55e', downColor: '#ff4444',
-                borderUpColor: '#22c55e', borderDownColor: '#ff4444',
-                wickUpColor: '#22c55e', wickDownColor: '#ff4444',
-            });
-            series.setData(data);
-        } else if (chartType === 'line') {
-            series = chart.addLineSeries({ color: '#ffaa00', lineWidth: 2 });
-            series.setData(data.map(d => ({ time: d.time, value: d.close })));
-        } else if (chartType === 'area') {
-            series = chart.addAreaSeries({
-                topColor: 'rgba(255, 170, 0, 0.3)',
-                bottomColor: 'rgba(255, 170, 0, 0.0)',
-                lineColor: '#ffaa00', lineWidth: 2,
-            });
-            series.setData(data.map(d => ({ time: d.time, value: d.close })));
+        const data = state.ohlcv;
+        switch (state.chartType) {
+            case 'candlestick':
+                series = chart.addCandlestickSeries({ upColor:'#22c55e', downColor:'#ff4444', borderUpColor:'#22c55e', borderDownColor:'#ff4444', wickUpColor:'#22c55e', wickDownColor:'#ff4444' });
+                series.setData(data); break;
+            case 'line':
+                series = chart.addLineSeries({ color:'#ffaa00', lineWidth:2 });
+                series.setData(data.map(d=>({time:d.time,value:d.close}))); break;
+            case 'area':
+                series = chart.addAreaSeries({ topColor:'rgba(255,170,0,0.25)', bottomColor:'rgba(255,170,0,0.0)', lineColor:'#ffaa00', lineWidth:2 });
+                series.setData(data.map(d=>({time:d.time,value:d.close}))); break;
+            case 'bar':
+                series = chart.addBarSeries({ upColor:'#22c55e', downColor:'#ff4444' });
+                series.setData(data); break;
+            default:
+                series = chart.addCandlestickSeries({ upColor:'#22c55e', downColor:'#ff4444', borderUpColor:'#22c55e', borderDownColor:'#ff4444', wickUpColor:'#22c55e', wickDownColor:'#ff4444' });
+                series.setData(data);
         }
-
         chart.timeScale().fitContent();
-        instances.set(ticker, { chart, series, data });
 
-        // Resize observer
-        const ro = new ResizeObserver(() => chart.applyOptions({ width: chartEl.clientWidth }));
-        ro.observe(chartEl);
+        const crosshairInfo = container.querySelector('#gp-crosshair-info');
+        chart.subscribeCrosshairMove(param => {
+            if (!param.time || !crosshairInfo) { if(crosshairInfo) crosshairInfo.style.display='none'; return; }
+            const bar = data.find(d => d.time === param.time);
+            if (!bar) { crosshairInfo.style.display='none'; return; }
+            const dt = new Date(bar.time * 1000);
+            crosshairInfo.style.display = 'flex';
+            crosshairInfo.innerHTML = '<span>'+dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+'</span>' +
+                '<span>O <span style="color:var(--white)">'+bar.open.toFixed(2)+'</span></span>' +
+                '<span>H <span style="color:var(--green)">'+bar.high.toFixed(2)+'</span></span>' +
+                '<span>L <span style="color:var(--red)">'+bar.low.toFixed(2)+'</span></span>' +
+                '<span>C <span style="color:var(--amber)">'+bar.close.toFixed(2)+'</span></span>' +
+                '<span>V <span style="color:var(--cyan)">'+(bar.volume/1e6).toFixed(1)+'M</span></span>';
+        });
 
-        // Update overlays
-        updateOverlays(container, ticker, data);
+        state.chart = chart; state.mainSeries = series; state.overlays = []; state.compareSeries = [];
+        new ResizeObserver(() => { if(chartEl.clientWidth>0) chart.applyOptions({width:chartEl.clientWidth}); }).observe(chartEl);
+        applyOverlays(container, state);
+        state.compareSymbols.forEach(sym => addCompareOverlay(state, sym));
     }
 
-    function updateOverlays(container, ticker, data) {
-        const inst = instances.get(ticker);
-        if (!inst) return;
-
-        // Remove old overlay series
-        if (inst.overlays) inst.overlays.forEach(s => inst.chart.removeSeries(s));
-        inst.overlays = [];
-
-        const checked = [...container.querySelectorAll('[data-overlay]:checked')].map(c => c.dataset.overlay);
-
+    function applyOverlays(container, state) {
+        if (!state.chart) return;
+        state.overlays.forEach(s => { try{state.chart.removeSeries(s);}catch(e){} });
+        state.overlays = [];
+        const checked = [...container.querySelectorAll('[data-overlay]:checked')].map(c=>c.dataset.overlay);
+        const data = state.ohlcv;
         checked.forEach(ov => {
-            if (ov === 'sma20') {
-                const s = inst.chart.addLineSeries({ color: '#4488ff', lineWidth: 1, priceLineVisible: false });
-                s.setData(DataService.calcSMA(data, 20));
-                inst.overlays.push(s);
-            } else if (ov === 'sma50') {
-                const s = inst.chart.addLineSeries({ color: '#ff8800', lineWidth: 1, priceLineVisible: false });
-                s.setData(DataService.calcSMA(data, 50));
-                inst.overlays.push(s);
-            } else if (ov === 'sma200') {
-                const s = inst.chart.addLineSeries({ color: '#ff4444', lineWidth: 1, priceLineVisible: false });
-                s.setData(DataService.calcSMA(data, 200));
-                inst.overlays.push(s);
-            } else if (ov === 'ema20') {
-                const s = inst.chart.addLineSeries({ color: '#00cccc', lineWidth: 1, priceLineVisible: false });
-                s.setData(DataService.calcEMA(data, 20));
-                inst.overlays.push(s);
-            } else if (ov === 'bb') {
-                const bb = DataService.calcBollingerBands(data);
-                const su = inst.chart.addLineSeries({ color: 'rgba(100,100,255,0.5)', lineWidth: 1, priceLineVisible: false });
-                su.setData(bb.upper);
-                const sl = inst.chart.addLineSeries({ color: 'rgba(100,100,255,0.5)', lineWidth: 1, priceLineVisible: false });
-                sl.setData(bb.lower);
-                inst.overlays.push(su, sl);
+            switch(ov) {
+                case 'sma20': addOvLine(state, DataService.calcSMA(data,20), '#4488ff'); break;
+                case 'sma50': addOvLine(state, DataService.calcSMA(data,50), '#ffaa00'); break;
+                case 'sma200': addOvLine(state, DataService.calcSMA(data,200), '#ff4444'); break;
+                case 'ema12': addOvLine(state, DataService.calcEMA(data,12), '#00cccc'); break;
+                case 'ema26': addOvLine(state, DataService.calcEMA(data,26), '#e879f9'); break;
+                case 'bb': {
+                    const bb = DataService.calcBollingerBands(data);
+                    addOvLine(state, bb.upper, 'rgba(100,149,237,0.5)');
+                    addOvLine(state, bb.lower, 'rgba(100,149,237,0.5)');
+                    addOvLine(state, bb.middle, 'rgba(100,149,237,0.3)');
+                    break;
+                }
+                case 'vwap': addOvLine(state, calcVWAP(data), '#a855f7'); break;
             }
         });
     }
 
-    function updateIndicators(container, ticker, data) {
-        const area = container.querySelector('#gp-indicator-area') || container.querySelector('.gp-indicator-charts');
-        if (!area) return;
-        area.innerHTML = '';
+    function addOvLine(state, data, color) {
+        const s = state.chart.addLineSeries({ color, lineWidth:1, priceLineVisible:false, lastValueVisible:false });
+        s.setData(data); state.overlays.push(s);
+    }
 
-        const checked = [...container.querySelectorAll('[data-ind]:checked')].map(c => c.dataset.ind);
+    function calcVWAP(data) {
+        const r=[]; let cv=0,ct=0;
+        for(let i=0;i<data.length;i++){const tp=(data[i].high+data[i].low+data[i].close)/3;cv+=data[i].volume;ct+=tp*data[i].volume;r.push({time:data[i].time,value:+(ct/cv).toFixed(2)});}
+        return r;
+    }
 
-        checked.forEach(ind => {
-            if (ind === 'volume') {
-                const div = document.createElement('div');
-                div.style.cssText = 'height:80px;margin-top:4px;';
-                area.appendChild(div);
-                const chart = LightweightCharts.createChart(div, {
-                    width: div.clientWidth || area.clientWidth,
-                    height: 80,
-                    layout: { background: { color: '#1a1a1a' }, textColor: '#666' },
-                    grid: { vertLines: { color: '#222' }, horzLines: { color: '#222' } },
-                    rightPriceScale: { borderColor: '#333' },
-                    timeScale: { visible: false },
-                });
-                const vs = chart.addHistogramSeries({
-                    color: '#26a69a',
-                    priceFormat: { type: 'volume' },
-                    priceScaleId: '',
-                });
-                vs.setData(data.map(d => ({
-                    time: d.time,
-                    value: d.volume,
-                    color: d.close >= d.open ? '#22c55e44' : '#ff444444'
-                })));
-                chart.timeScale().fitContent();
-                new ResizeObserver(() => chart.applyOptions({ width: div.clientWidth })).observe(div);
-            }
+    function calcStochastic(data, kP=14, dP=3, sm=3) {
+        const kRaw=[];
+        for(let i=kP-1;i<data.length;i++){let hi=-Infinity,lo=Infinity;for(let j=0;j<kP;j++){hi=Math.max(hi,data[i-j].high);lo=Math.min(lo,data[i-j].low);}
+        kRaw.push({time:data[i].time,value:+(hi===lo?50:((data[i].close-lo)/(hi-lo))*100).toFixed(2)});}
+        const kS=smaArr(kRaw,sm),dS=smaArr(kS,dP);return{k:kS,d:dS};
+    }
 
-            if (ind === 'rsi') {
-                const rsi = DataService.calcRSI(data);
-                const div = document.createElement('div');
-                div.style.cssText = 'height:80px;margin-top:4px;';
-                area.appendChild(div);
-                const chart = LightweightCharts.createChart(div, {
-                    width: div.clientWidth || area.clientWidth,
-                    height: 80,
-                    layout: { background: { color: '#1a1a1a' }, textColor: '#666' },
-                    grid: { vertLines: { color: '#222' }, horzLines: { color: '#222' } },
-                    rightPriceScale: { borderColor: '#333' },
-                    timeScale: { visible: false },
-                });
-                const rs = chart.addLineSeries({ color: '#9b59b6', lineWidth: 1 });
-                rs.setData(rsi);
-                // Overbought/oversold lines
-                chart.timeScale().fitContent();
-                new ResizeObserver(() => chart.applyOptions({ width: div.clientWidth })).observe(div);
-            }
+    function smaArr(arr,p){const r=[];for(let i=p-1;i<arr.length;i++){let s=0;for(let j=0;j<p;j++)s+=arr[i-j].value;r.push({time:arr[i].time,value:+(s/p).toFixed(2)});}return r;}
 
-            if (ind === 'macd') {
-                const macdData = DataService.calcMACD(data);
-                const div = document.createElement('div');
-                div.style.cssText = 'height:80px;margin-top:4px;';
-                area.appendChild(div);
-                const chart = LightweightCharts.createChart(div, {
-                    width: div.clientWidth || area.clientWidth,
-                    height: 80,
-                    layout: { background: { color: '#1a1a1a' }, textColor: '#666' },
-                    grid: { vertLines: { color: '#222' }, horzLines: { color: '#222' } },
-                    rightPriceScale: { borderColor: '#333' },
-                    timeScale: { visible: false },
-                });
-                const hist = chart.addHistogramSeries({ priceFormat: { type: 'price' }, priceScaleId: '' });
-                hist.setData(macdData.histogram);
-                const ml = chart.addLineSeries({ color: '#4488ff', lineWidth: 1, priceScaleId: '' });
-                ml.setData(macdData.macd);
-                const sl = chart.addLineSeries({ color: '#ff8800', lineWidth: 1, priceScaleId: '' });
-                sl.setData(macdData.signal);
-                chart.timeScale().fitContent();
-                new ResizeObserver(() => chart.applyOptions({ width: div.clientWidth })).observe(div);
-            }
+    function addCompareOverlay(state, symbol) {
+        if (!state.chart) return;
+        const compData = DataService.generateOHLCV(symbol, getTFDays(state.timeframe));
+        const basePrice = state.ohlcv[0]?.close||1, compBase = compData[0]?.close||1;
+        const normalized = compData.map(d=>({time:d.time,value:+((d.close/compBase)*basePrice).toFixed(2)}));
+        const ci = state.compareSeries.length % COLORS.compare.length;
+        const s = state.chart.addLineSeries({ color:COLORS.compare[ci], lineWidth:2, priceLineVisible:false, lastValueVisible:true, title:symbol });
+        s.setData(normalized);
+        state.compareSeries.push({symbol, series:s});
+    }
+
+    function updateCompareTags(container, state) {
+        const el = container.querySelector('#gp-compare-tags'); if(!el) return;
+        el.innerHTML = state.compareSymbols.map((s,i)=>
+            '<span class="compare-tag" style="color:'+COLORS.compare[i%COLORS.compare.length]+'">'+s+' <span class="compare-tag-x" data-sym="'+s+'">×</span></span>'
+        ).join('');
+        el.querySelectorAll('.compare-tag-x').forEach(x=>{
+            x.addEventListener('click',()=>{
+                const sym=x.dataset.sym;
+                state.compareSymbols=state.compareSymbols.filter(s=>s!==sym);
+                const cs=state.compareSeries.find(c=>c.symbol===sym);
+                if(cs){try{state.chart.removeSeries(cs.series);}catch(e){}}
+                state.compareSeries=state.compareSeries.filter(c=>c.symbol!==sym);
+                updateCompareTags(container,state);
+            });
         });
+    }
+
+    function buildIndicators(container, state) {
+        const area = container.querySelector('#gp-indicator-area'); if(!area) return;
+        area.innerHTML = '';
+        const checked = [...container.querySelectorAll('[data-ind]:checked')].map(c=>c.dataset.ind);
+        const data = state.ohlcv;
+        state.indicatorCharts = [];
+
+        if (checked.includes('volume')) {
+            mkIndChart(area, 'VOLUME', 80, (chart)=>{
+                const vs = chart.addHistogramSeries({color:'#26a69a',priceFormat:{type:'volume'},priceScaleId:''});
+                vs.setData(data.map(d=>({time:d.time,value:d.volume,color:d.close>=d.open?'rgba(34,197,94,0.5)':'rgba(255,68,68,0.5)'})));
+            }, state);
+        }
+        if (checked.includes('rsi')) {
+            const rsi = DataService.calcRSI(data, 14);
+            mkIndChart(area, 'RSI(14)', 80, (chart)=>{
+                chart.addLineSeries({color:'#9b59b6',lineWidth:1.5,priceScaleId:'rsi'}).setData(rsi);
+                chart.addLineSeries({color:'#ff444444',lineWidth:1,lineStyle:2,priceScaleId:'rsi',priceLineVisible:false,lastValueVisible:false}).setData(rsi.map(d=>({time:d.time,value:70})));
+                chart.addLineSeries({color:'#22c55e44',lineWidth:1,lineStyle:2,priceScaleId:'rsi',priceLineVisible:false,lastValueVisible:false}).setData(rsi.map(d=>({time:d.time,value:30})));
+            }, state);
+        }
+        if (checked.includes('macd')) {
+            const m = DataService.calcMACD(data);
+            mkIndChart(area, 'MACD(12,26,9)', 80, (chart)=>{
+                chart.addHistogramSeries({priceFormat:{type:'price'},priceScaleId:'macd'}).setData(m.histogram);
+                chart.addLineSeries({color:'#4488ff',lineWidth:1.5,priceScaleId:'macd'}).setData(m.macd);
+                chart.addLineSeries({color:'#ff8800',lineWidth:1,priceScaleId:'macd'}).setData(m.signal);
+            }, state);
+        }
+        if (checked.includes('stoch')) {
+            const st = calcStochastic(data);
+            mkIndChart(area, 'STOCH(14,3,3)', 80, (chart)=>{
+                chart.addLineSeries({color:'#4488ff',lineWidth:1.5,priceScaleId:'st'}).setData(st.k);
+                chart.addLineSeries({color:'#ff8800',lineWidth:1,priceScaleId:'st'}).setData(st.d);
+                chart.addLineSeries({color:'#ff444444',lineWidth:1,lineStyle:2,priceScaleId:'st',priceLineVisible:false,lastValueVisible:false}).setData(st.k.map(d=>({time:d.time,value:80})));
+                chart.addLineSeries({color:'#22c55e44',lineWidth:1,lineStyle:2,priceScaleId:'st',priceLineVisible:false,lastValueVisible:false}).setData(st.k.map(d=>({time:d.time,value:20})));
+            }, state);
+        }
+    }
+
+    function mkIndChart(area, label, height, setupFn, state) {
+        const wrap = document.createElement('div');
+        wrap.className = 'gp-ind-panel';
+        wrap.innerHTML = '<div class="gp-ind-label">'+label+'</div><div class="gp-ind-chart"></div>';
+        area.appendChild(wrap);
+        const div = wrap.querySelector('.gp-ind-chart');
+        div.style.height = height+'px';
+        const chart = LightweightCharts.createChart(div, {
+            width: div.clientWidth||area.clientWidth, height: height,
+            layout:{background:{color:'#0a0a0a'},textColor:'#555',fontFamily:"'JetBrains Mono',monospace",fontSize:9},
+            grid:{vertLines:{color:'#111'},horzLines:{color:'#111'}},
+            rightPriceScale:{borderColor:'#222'},timeScale:{visible:false},
+            handleScroll:false, handleScale:false,
+        });
+        setupFn(chart);
+        chart.timeScale().fitContent();
+        if(state.chart){state.chart.timeScale().subscribeVisibleLogicalRangeChange(range=>{if(range)chart.timeScale().setVisibleLogicalRange(range);});}
+        new ResizeObserver(()=>{if(div.clientWidth>0)chart.applyOptions({width:div.clientWidth});}).observe(div);
+        state.indicatorCharts.push(chart);
+    }
+
+    function toggleFullscreen(container, state) {
+        const root = container.querySelector('#gp-root'); if(!root) return;
+        state.isFullscreen = !state.isFullscreen;
+        root.classList.toggle('gp-fullscreen', state.isFullscreen);
+        setTimeout(()=>{
+            if(state.chart){const el=container.querySelector('#gp-main-chart');if(el)state.chart.applyOptions({width:el.clientWidth});}
+        },100);
     }
 
     return { render, instances };
-})();
-
-// Compare module
-const Compare = (() => {
-    function render(container, ticker) {
-        const tickers = ticker ? [ticker] : [];
-        container.innerHTML = `
-            <div class="comp-view">
-                <div class="comp-header">
-                    <h2 style="color:var(--amber);font-size:14px;margin-bottom:6px;">COMPARE SECURITIES</h2>
-                    <div class="comp-inputs">
-                        <input type="text" class="comp-ticker" placeholder="Ticker 1" value="${tickers[0]||''}">
-                        <span class="comp-vs">vs</span>
-                        <input type="text" class="comp-ticker" placeholder="Ticker 2">
-                        <input type="text" class="comp-ticker" placeholder="Ticker 3">
-                        <button class="btn-terminal" id="comp-run-btn">COMPARE</button>
-                    </div>
-                </div>
-                <div class="comp-chart" id="comp-chart-area" style="min-height:350px;background:var(--bg-card);border:1px solid var(--border);"></div>
-                <div class="comp-table" id="comp-table-area" style="margin-top:8px;"></div>
-            </div>`;
-
-        container.querySelector('#comp-run-btn').addEventListener('click', () => {
-            const inputs = container.querySelectorAll('.comp-ticker');
-            const syms = [...inputs].map(i => i.value.toUpperCase().trim()).filter(Boolean);
-            if (syms.length < 2) { Terminal.notify('Enter at least 2 tickers', 'error'); return; }
-            runCompare(container, syms);
-        });
-    }
-
-    async function runCompare(container, tickers) {
-        const chartArea = container.querySelector('#comp-chart-area');
-        const tableArea = container.querySelector('#comp-table-area');
-        chartArea.innerHTML = '<div class="loading-spinner" style="margin:20px auto;display:block;"></div>';
-
-        const colors = ['#ffaa00', '#4488ff', '#22c55e', '#ff4444', '#9b59b6'];
-
-        // Create chart
-        chartArea.innerHTML = '';
-        const chart = LightweightCharts.createChart(chartArea, {
-            width: chartArea.clientWidth,
-            height: 350,
-            layout: { background: { color: '#1a1a1a' }, textColor: '#888' },
-            grid: { vertLines: { color: '#222' }, horzLines: { color: '#222' } },
-            rightPriceScale: { borderColor: '#333', mode: LightweightCharts.PriceScaleMode.Percentage },
-            timeScale: { borderColor: '#333' },
-        });
-
-        const quotes = await DataService.getMultipleQuotes(tickers);
-
-        tickers.forEach((ticker, i) => {
-            const data = DataService.generateOHLCV(ticker, 252);
-            const base = data[0].close;
-            const normalized = data.map(d => ({ time: d.time, value: ((d.close - base) / base) * 100 }));
-            const s = chart.addLineSeries({ color: colors[i % colors.length], lineWidth: 2, title: ticker });
-            s.setData(normalized);
-        });
-
-        chart.timeScale().fitContent();
-        new ResizeObserver(() => chart.applyOptions({ width: chartArea.clientWidth })).observe(chartArea);
-
-        // Comparison table
-        let tableHtml = `<table class="terminal-table"><thead><tr><th>METRIC</th>${tickers.map(t => `<th>${t}</th>`).join('')}</tr></thead><tbody>`;
-        const metrics = ['price','pe','pb','eps','dividend','beta','marketCap'];
-        const labels = { price:'Price', pe:'P/E', pb:'P/B', eps:'EPS', dividend:'Dividend', beta:'Beta', marketCap:'Market Cap' };
-
-        for (const m of metrics) {
-            tableHtml += `<tr><td style="color:var(--amber)">${labels[m]}</td>`;
-            for (const q of quotes) {
-                let val = q ? q[m] : '--';
-                if (m === 'price' && val) val = '$' + val.toFixed(2);
-                else if (m === 'marketCap' && val) val = '$' + (val/1e9).toFixed(1) + 'B';
-                else if (val && typeof val === 'number') val = val.toFixed(2);
-                tableHtml += `<td>${val || '--'}</td>`;
-            }
-            tableHtml += '</tr>';
-        }
-        tableHtml += '</tbody></table>';
-        tableArea.innerHTML = tableHtml;
-    }
-
-    return { render, run: () => {} };
-})();
-
-// Dividends module
-const Dividends = (() => {
-    async function render(container, ticker) {
-        if (!ticker) { container.innerHTML = '<div class="empty-state"><p>Enter a ticker for dividend analysis</p></div>'; return; }
-        const data = await DataService.getQuote(ticker);
-
-        const divYield = data.dividend > 0 ? ((data.dividend / data.price) * 100).toFixed(2) : '0.00';
-        const payoutRatio = data.eps > 0 ? ((data.dividend / data.eps) * 100).toFixed(1) : 'N/A';
-
-        container.innerHTML = `
-            <div class="dvd-view">
-                <div class="section-header">${ticker} — DIVIDEND ANALYSIS</div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
-                    <div class="card">
-                        <div class="section-header">DIVIDEND SUMMARY</div>
-                        <div class="stat-item"><span class="stat-label">Annual Dividend</span><span class="stat-value">$${data.dividend.toFixed(2)}</span></div>
-                        <div class="stat-item"><span class="stat-label">Dividend Yield</span><span class="stat-value ${parseFloat(divYield) > 0 ? 'positive' : ''}">${divYield}%</span></div>
-                        <div class="stat-item"><span class="stat-label">Payout Ratio</span><span class="stat-value">${payoutRatio}${payoutRatio !== 'N/A' ? '%' : ''}</span></div>
-                        <div class="stat-item"><span class="stat-label">Ex-Dividend</span><span class="stat-value">--</span></div>
-                        <div class="stat-item"><span class="stat-label">Pay Frequency</span><span class="stat-value">Quarterly</span></div>
-                    </div>
-                    <div class="card">
-                        <div class="section-header">DIVIDEND HISTORY (5Y)</div>
-                        <div id="dvd-hist-chart" style="height:200px;"></div>
-                    </div>
-                </div>
-            </div>`;
-
-        // Simple dividend history chart
-        if (typeof LightweightCharts !== 'undefined') {
-            const chartEl = container.querySelector('#dvd-hist-chart');
-            const chart = LightweightCharts.createChart(chartEl, {
-                width: chartEl.clientWidth, height: 200,
-                layout: { background: { color: '#1a1a1a' }, textColor: '#666' },
-                grid: { vertLines: { color: '#222' }, horzLines: { color: '#222' } },
-            });
-            const s = chart.addHistogramSeries({ color: '#22c55e' });
-            const divData = [];
-            for (let y = 0; y < 5; y++) {
-                for (let q = 0; q < 4; q++) {
-                    const date = new Date();
-                    date.setFullYear(date.getFullYear() - (4 - y));
-                    date.setMonth(q * 3);
-                    const growth = 1 + y * 0.03;
-                    divData.push({ time: Math.floor(date.getTime()/1000), value: (data.dividend/4) * growth });
-                }
-            }
-            s.setData(divData);
-            chart.timeScale().fitContent();
-        }
-    }
-
-    return { render };
-})();
-
-// Earnings module
-const Earnings = (() => {
-    async function render(container, ticker) {
-        if (!ticker) { container.innerHTML = '<div class="empty-state"><p>Enter a ticker for earnings data</p></div>'; return; }
-        const data = await DataService.getQuote(ticker);
-
-        // Generate simulated earnings history
-        const quarters = [];
-        for (let i = 7; i >= 0; i--) {
-            const d = new Date();
-            d.setMonth(d.getMonth() - i * 3);
-            const qLabel = `Q${Math.ceil((d.getMonth()+1)/3)} ${d.getFullYear()}`;
-            const estimate = data.eps / 4 * (0.9 + Math.random() * 0.2);
-            const actual = estimate * (0.95 + Math.random() * 0.15);
-            const surprise = ((actual - estimate) / Math.abs(estimate)) * 100;
-            quarters.push({ quarter: qLabel, estimate: estimate.toFixed(2), actual: actual.toFixed(2), surprise: surprise.toFixed(1) });
-        }
-
-        container.innerHTML = `
-            <div class="ern-view">
-                <div class="section-header">${ticker} — EARNINGS</div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
-                    <div class="card">
-                        <div class="section-header">EARNINGS HISTORY</div>
-                        <table class="terminal-table">
-                            <thead><tr><th>QUARTER</th><th>ESTIMATE</th><th>ACTUAL</th><th>SURPRISE</th></tr></thead>
-                            <tbody>
-                                ${quarters.map(q => `<tr>
-                                    <td>${q.quarter}</td>
-                                    <td>$${q.estimate}</td>
-                                    <td>$${q.actual}</td>
-                                    <td class="${parseFloat(q.surprise) >= 0 ? 'positive' : 'negative'}">${parseFloat(q.surprise) >= 0 ? '+' : ''}${q.surprise}%</td>
-                                </tr>`).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="card">
-                        <div class="section-header">EPS TREND</div>
-                        <div id="ern-chart" style="height:200px;"></div>
-                    </div>
-                </div>
-            </div>`;
-
-        if (typeof LightweightCharts !== 'undefined') {
-            const chartEl = container.querySelector('#ern-chart');
-            const chart = LightweightCharts.createChart(chartEl, {
-                width: chartEl.clientWidth, height: 200,
-                layout: { background: { color: '#1a1a1a' }, textColor: '#666' },
-                grid: { vertLines: { color: '#222' }, horzLines: { color: '#222' } },
-            });
-            const s = chart.addHistogramSeries({ color: '#ffaa00' });
-            const epsData = quarters.map((q, i) => {
-                const d = new Date();
-                d.setMonth(d.getMonth() - (7-i)*3);
-                return { time: Math.floor(d.getTime()/1000), value: parseFloat(q.actual), color: parseFloat(q.surprise) >= 0 ? '#22c55e' : '#ff4444' };
-            });
-            s.setData(epsData);
-            chart.timeScale().fitContent();
-        }
-    }
-
-    return { render };
 })();

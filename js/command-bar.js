@@ -183,6 +183,11 @@ const CommandBar = (() => {
         let cmd = rawCmd.replace(/\s*<?\s*GO\s*>?\s*$/i, '').trim().toUpperCase();
         const parts = cmd.split(/\s+/);
 
+        // COMP with multiple tickers: COMP AAPL MSFT GOOGL
+        if (parts[0] === 'COMP' && parts.length >= 2) {
+            return routeCommand(parts.slice(1).join(' '), 'COMP');
+        }
+
         // Standalone commands (no ticker needed)
         const standaloneCommands = ['PORT','WL','SCAN','MOST','GAIN','DROP','HIGH','LOW','NEWS','HMAP','COMP','ALERTS','ALRT','HELP','HOME'];
         if (parts.length === 1 && standaloneCommands.includes(parts[0])) {
